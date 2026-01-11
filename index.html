@@ -31,8 +31,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
     <!-- PAYPAL SDK -->
-    <!-- Client ID provided by user -->
-    <script src="https://www.paypal.com/sdk/js?client-id=AbkHNTbccKTux5lsE5nCi7BHsKT-Qpbmse2XU5T3J4pUKrLUle6BtwLm0LaIuSygsz0rq2MrTnlGcg-k&currency=USD"></script>
+    <!-- Removed crossorigin to fix 'Can not read window host' Bootstrap Error -->
+    <!-- No defer/async to ensure window.paypal is available when React mounts -->
+    <script src="https://www.paypal.com/sdk/js?client-id=AbkHNTbccKTux5lsE5nCi7BHsKT-Qpbmse2XU5T3J4pUKrLUle6BtwLm0LaIuSygsz0rq2MrTnlGcg-k&currency=USD&intent=capture"></script>
 
     <script>
       tailwind.config = {
