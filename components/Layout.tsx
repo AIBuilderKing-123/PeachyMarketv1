@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { User, UserRole } from '../types';
 import { Home, ShoppingBag, Video, Users, ShieldCheck, Mail, Settings, LogOut, Menu, X, MessageCircle, Crown, Download } from 'lucide-react';
@@ -11,11 +11,14 @@ interface LayoutProps {
 }
 
 export const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
-  const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
-  const [installPrompt, setInstallPrompt] = React.useState<any>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [installPrompt, setInstallPrompt] = useState<any>(null);
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const profileMenuTimeout = useRef<any>(null);
+  
   const navigate = useNavigate();
 
-  React.useEffect(() => {
+  useEffect(() => {
     const handler = (e: any) => {
       e.preventDefault();
       setInstallPrompt(e);
@@ -35,6 +38,18 @@ export const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
 
   const toggleMenu = () => setMobileMenuOpen(!mobileMenuOpen);
 
+  // Hover Handlers with Delay
+  const handleProfileEnter = () => {
+    if (profileMenuTimeout.current) clearTimeout(profileMenuTimeout.current);
+    setIsProfileMenuOpen(true);
+  };
+
+  const handleProfileLeave = () => {
+    profileMenuTimeout.current = setTimeout(() => {
+      setIsProfileMenuOpen(false);
+    }, 400); // 400ms buffer time
+  };
+
   const navItems = [
     { to: '/', label: 'Home', icon: Home },
     { to: '/marketplace', label: 'Marketplace', icon: ShoppingBag },
@@ -51,6 +66,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
   const handleProfileClick = () => {
     navigate('/profile');
     setMobileMenuOpen(false);
+    setIsProfileMenuOpen(false);
   };
 
   return (
@@ -117,7 +133,11 @@ export const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
             {/* User Menu */}
             <div className="flex items-center space-x-4">
               {user ? (
-                <div className="relative group h-full flex items-center">
+                <div 
+                  className="relative h-full flex items-center"
+                  onMouseEnter={handleProfileEnter}
+                  onMouseLeave={handleProfileLeave}
+                >
                   <button className="flex items-center focus:outline-none py-2" onClick={handleProfileClick}>
                     <img
                       src={user.avatarUrl}
@@ -125,30 +145,48 @@ export const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
                       className={`w-10 h-10 rounded-full object-cover border-2 ${user.role === UserRole.DIAMOND_VIP ? 'border-blue-400 ring-2 ring-blue-500/30' : 'border-peach-600'}`}
                     />
                     <div className="hidden lg:block ml-3 text-left">
-                      <p className="text-sm font-bold text-gray-200 group-hover:text-peach-500 transition-colors">{user.username}</p>
+                      <p className="text-sm font-bold text-gray-200 hover:text-peach-500 transition-colors flex items-center">
+                        {user.username}
+                        {user.role === UserRole.OWNER && <span className="ml-2 text-[10px] bg-red-600 text-white px-1.5 py-0.5 rounded font-bold tracking-wider">OWNER</span>}
+                      </p>
                       <p className="text-xs text-gray-500 font-medium">${user.balance.toFixed(2)}</p>
                     </div>
                   </button>
-                  {/* Dropdown (Hover) */}
-                  <div className="absolute right-0 top-full pt-2 w-56 hidden group-hover:block z-50">
-                    <div className="bg-gray-800 rounded-xl shadow-2xl py-2 border border-gray-700 animate-fadeIn">
-                       <button onClick={handleProfileClick} className="flex items-center w-full text-left px-5 py-3 text-sm text-gray-300 hover:bg-gray-700/50 hover:text-white transition-colors">
-                          <Settings className="w-4 h-4 mr-3" /> Profile
-                       </button>
-                       <button onClick={() => navigate('/memberships')} className="flex items-center w-full text-left px-5 py-3 text-sm text-peach-400 hover:bg-gray-700/50 font-bold transition-colors">
-                          <Crown className="w-4 h-4 mr-3" /> Upgrade to VIP
-                       </button>
-                       {installPrompt && (
-                         <button onClick={handleInstallClick} className="flex items-center w-full text-left px-5 py-3 text-sm text-green-400 hover:bg-gray-700/50 font-bold transition-colors">
-                            <Download className="w-4 h-4 mr-3" /> Install App
+                  
+                  {/* Dropdown Menu */}
+                  {isProfileMenuOpen && (
+                    <div className="absolute right-0 top-full mt-1 w-64 z-50">
+                      {/* Invisible bridge to prevent mouse gap issues */}
+                      <div className="absolute -top-4 left-0 w-full h-4 bg-transparent"></div>
+                      
+                      <div className="bg-gray-800 rounded-xl shadow-2xl py-2 border border-gray-700 animate-fadeIn">
+                         <div className="px-5 py-3 border-b border-gray-700 md:hidden">
+                            <p className="text-white font-bold">{user.username}</p>
+                            <p className="text-xs text-gray-400">${user.balance.toFixed(2)}</p>
+                         </div>
+                         <button onClick={handleProfileClick} className="flex items-center w-full text-left px-5 py-3 text-sm text-gray-300 hover:bg-gray-700/50 hover:text-white transition-colors">
+                            <Settings className="w-4 h-4 mr-3" /> Profile Settings
                          </button>
-                       )}
-                       <div className="border-t border-gray-700 my-1"></div>
-                       <button onClick={onLogout} className="flex items-center w-full text-left px-5 py-3 text-sm text-red-400 hover:bg-gray-700/50 transition-colors">
-                          <LogOut className="w-4 h-4 mr-3" /> Logout
-                       </button>
+                         <button onClick={() => { navigate('/memberships'); setIsProfileMenuOpen(false); }} className="flex items-center w-full text-left px-5 py-3 text-sm text-peach-400 hover:bg-gray-700/50 font-bold transition-colors">
+                            <Crown className="w-4 h-4 mr-3" /> Upgrade to VIP
+                         </button>
+                         {user.role === UserRole.OWNER && (
+                           <button onClick={() => { navigate('/admin'); setIsProfileMenuOpen(false); }} className="flex items-center w-full text-left px-5 py-3 text-sm text-red-400 hover:bg-gray-700/50 font-bold transition-colors">
+                              <ShieldCheck className="w-4 h-4 mr-3" /> Admin Portal
+                           </button>
+                         )}
+                         {installPrompt && (
+                           <button onClick={handleInstallClick} className="flex items-center w-full text-left px-5 py-3 text-sm text-green-400 hover:bg-gray-700/50 font-bold transition-colors">
+                              <Download className="w-4 h-4 mr-3" /> Install App
+                           </button>
+                         )}
+                         <div className="border-t border-gray-700 my-1"></div>
+                         <button onClick={onLogout} className="flex items-center w-full text-left px-5 py-3 text-sm text-red-400 hover:bg-gray-700/50 transition-colors">
+                            <LogOut className="w-4 h-4 mr-3" /> Logout
+                         </button>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               ) : (
                 <div className="flex space-x-3">
@@ -206,6 +244,11 @@ export const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
                <button onClick={() => { navigate('/memberships'); setMobileMenuOpen(false); }} className="flex items-center w-full px-4 py-3 text-base font-bold text-peach-500 hover:bg-gray-800 rounded-lg">
                   <Crown className="w-5 h-5 mr-3" /> Upgrade to VIP
                </button>
+               {user.role === UserRole.OWNER && (
+                  <button onClick={() => { navigate('/admin'); setMobileMenuOpen(false); }} className="flex items-center w-full px-4 py-3 text-base font-bold text-red-500 hover:bg-gray-800 rounded-lg">
+                    <ShieldCheck className="w-5 h-5 mr-3" /> Admin Portal
+                  </button>
+               )}
                {installPrompt && (
                  <button onClick={() => { handleInstallClick(); setMobileMenuOpen(false); }} className="flex items-center w-full px-4 py-3 text-base font-bold text-green-500 hover:bg-gray-800 rounded-lg">
                     <Download className="w-5 h-5 mr-3" /> Install App

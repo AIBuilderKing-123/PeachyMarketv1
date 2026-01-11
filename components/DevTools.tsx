@@ -14,9 +14,8 @@ export const DevTools: React.FC<DevToolsProps> = ({ user, setUser }) => {
   const [editTokens, setEditTokens] = useState<number>(0);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // 1. Access Control: Only Owner can see/open.
-  // Exception: If NO user is logged in, show button to create Owner for initial setup.
-  const canAccess = !user || user.role === UserRole.OWNER;
+  // 1. Access Control: STRICTLY Only Owner can see/open.
+  const canAccess = user?.role === UserRole.OWNER;
 
   useEffect(() => {
     if (isOpen) {
@@ -51,38 +50,6 @@ export const DevTools: React.FC<DevToolsProps> = ({ user, setUser }) => {
         setUser(updatedUser);
         localStorage.setItem('peachy_session', JSON.stringify(updatedUser));
     }
-  };
-
-  const loginAsOwner = () => {
-    // 1. Get current users or initialize empty array
-    const storedUsers = localStorage.getItem('peachy_users');
-    let currentUsers: User[] = storedUsers ? JSON.parse(storedUsers) : [];
-
-    // 2. Check if RootAdmin already exists to prevent duplicates
-    let ownerUser = currentUsers.find(u => u.role === UserRole.OWNER && u.username === 'RootAdmin');
-
-    if (!ownerUser) {
-        ownerUser = {
-            id: `owner-${Date.now()}`,
-            username: `RootAdmin`,
-            email: `root@peachy.local`,
-            realName: 'System Root',
-            role: UserRole.OWNER,
-            avatarUrl: `https://api.dicebear.com/7.x/initials/svg?seed=ROOT`,
-            bannerUrl: 'https://picsum.photos/1200/400?grayscale',
-            bio: `Root Administrator`,
-            balance: 1000000,
-            tokens: 1000000,
-            isVerified: true
-        };
-        currentUsers.push(ownerUser);
-        localStorage.setItem('peachy_users', JSON.stringify(currentUsers));
-    }
-
-    // 3. Update State Reactively (No Reload)
-    setAllUsers(currentUsers); // Update list in DevTool
-    setUser(ownerUser);        // Log the user in globally
-    localStorage.setItem('peachy_session', JSON.stringify(ownerUser));
   };
 
   const modifyTokens = (amount: number) => {
@@ -133,20 +100,6 @@ export const DevTools: React.FC<DevToolsProps> = ({ user, setUser }) => {
         <Wrench className="w-6 h-6 group-hover:rotate-90 transition-transform" />
       </button>
     );
-  }
-
-  // View for Non-Logged In User (Emergency Access)
-  if (!user) {
-      return (
-        <div className="fixed bottom-4 left-4 z-[9999] bg-gray-900 border-2 border-red-600 rounded-xl shadow-2xl p-6 w-80 animate-fadeIn text-center">
-            <h3 className="font-bold text-red-500 mb-4 text-xl">Restricted Access</h3>
-            <p className="text-gray-400 text-sm mb-6">Owner privileges required.</p>
-            <button onClick={loginAsOwner} className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-lg shadow-lg mb-2">
-                Initialize Owner Account
-            </button>
-            <button onClick={() => setIsOpen(false)} className="text-gray-500 text-sm hover:text-white underline">Close</button>
-        </div>
-      );
   }
 
   // Main Admin Panel

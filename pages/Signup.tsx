@@ -122,6 +122,7 @@ export const Signup: React.FC<SignupProps> = ({ onLogin }) => {
         // @ts-ignore - simulating password stored in user obj for mock auth
         password: formData.password, 
         role: initialRole,
+        joinedAt: new Date().toISOString(),
         avatarUrl: `https://api.dicebear.com/7.x/initials/svg?seed=${formData.username}`,
         bannerUrl: 'https://picsum.photos/1200/400?grayscale',
         balance: initialBalance,

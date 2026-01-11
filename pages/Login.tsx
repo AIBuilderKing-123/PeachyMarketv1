@@ -26,7 +26,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
       const users = storedUsers ? JSON.parse(storedUsers) : [];
 
       // Find user
-      const user = users.find((u: any) => u.email === email && u.password === password);
+      const user = users.find((u: any) => u.email.toLowerCase().trim() === email.toLowerCase().trim() && u.password === password);
 
       if (user) {
         // CHECK FOR BAN OR SUSPENSION
@@ -42,7 +42,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
         // --- OWNER OVERRIDE CHECK ---
         // If the email matches the owner email, ensure they have the OWNER role.
         // This fixes the account if it was created before the signup logic changed or if role was lost.
-        if (user.email.toLowerCase() === 'thepeachymarkets@gmail.com' && user.role !== UserRole.OWNER) {
+        if (user.email.toLowerCase().trim() === 'thepeachymarkets@gmail.com' && user.role !== UserRole.OWNER) {
             user.role = UserRole.OWNER;
             user.isVerified = true;
             

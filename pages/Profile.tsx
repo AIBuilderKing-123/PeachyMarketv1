@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { User, UserRole, Transaction } from '../types';
-import { Camera, Edit, UserPlus, MessageCircle, Flag, ArrowUpRight, ArrowDownLeft, Wallet, Calendar, Clock, DollarSign, Coins, Heart, Users as UsersIcon, Link as LinkIcon, Copy, X, Save } from 'lucide-react';
+import { Camera, Edit, UserPlus, MessageCircle, Flag, ArrowUpRight, ArrowDownLeft, Wallet, Calendar, Clock, DollarSign, Coins, Heart, Users as UsersIcon, Link as LinkIcon, Copy, X, Save, Shield } from 'lucide-react';
 import { SEO } from '../components/SEO';
 import { useNavigate } from 'react-router-dom';
 
@@ -167,11 +167,15 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser }) => {
         {/* Name & Bio */}
         <div className="mt-6 md:mt-2">
            <div className="flex flex-col mb-6">
-             <div className="flex items-center">
+             <div className="flex items-center flex-wrap gap-2">
                <h1 className="text-3xl font-bold text-slate-800 mr-2">{user.username}</h1>
                {user.isVerified && <span className="text-blue-500 bg-blue-50 px-2 py-0.5 rounded text-xs font-bold border border-blue-100">VERIFIED</span>}
-               {user.role === UserRole.VIP && <span className="ml-2 bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded text-xs font-bold border border-yellow-200">VIP</span>}
-               {user.role === UserRole.OWNER && <span className="ml-2 bg-red-100 text-red-700 px-2 py-0.5 rounded text-xs font-bold border border-red-200">OWNER</span>}
+               {user.role === UserRole.VIP && <span className="bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded text-xs font-bold border border-yellow-200">VIP</span>}
+               {user.role === UserRole.OWNER && (
+                 <span className="flex items-center bg-red-600 text-white px-3 py-1 rounded-full text-xs font-bold shadow-md shadow-red-200">
+                   <Shield className="w-3 h-3 mr-1" /> OWNER
+                 </span>
+               )}
              </div>
              
              {/* Follower Counts */}
@@ -203,7 +207,11 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser }) => {
                    </div>
                    <div className="flex justify-between">
                      <span className="text-gray-500">Joined</span>
-                     <span className="font-medium text-slate-700">Oct 2023</span>
+                     <span className="font-medium text-slate-700">
+                        {user.joinedAt 
+                         ? new Date(user.joinedAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+                         : 'Oct 2023'}
+                     </span>
                    </div>
                  </div>
                </div>
@@ -305,7 +313,7 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser }) => {
                                         </span>
                                      </div>
                                   </div>
-                               </div>
+                                </div>
                                <div className="text-right">
                                   <div className={`font-bold ${tx.type === 'EARNING' || tx.type === 'DEPOSIT' ? 'text-green-600' : 'text-slate-800'}`}>
                                     {tx.type === 'EARNING' || tx.type === 'DEPOSIT' || tx.type === 'TIP_RECEIVED' ? '+' : '-'}${tx.amount.toFixed(2)}

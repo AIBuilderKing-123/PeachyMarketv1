@@ -15,6 +15,7 @@ export interface User {
   email: string;
   realName: string; // Full Legal Name
   role: UserRole;
+  joinedAt?: string; // ISO Date String
   avatarUrl: string;
   bannerUrl?: string;
   bio?: string;
