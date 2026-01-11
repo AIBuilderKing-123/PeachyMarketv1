@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { User, UserRole } from '../types';
-import { KeyRound, ArrowLeft, CheckCircle, Loader2, ServerOff } from 'lucide-react';
+import { User } from '../types';
+import { KeyRound, ArrowLeft, Loader2, ServerOff } from 'lucide-react';
 import { SEO } from '../components/SEO';
 
 interface LoginProps {
@@ -23,31 +23,26 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password })
-      });
+        const res = await fetch('/api/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+        });
 
-      // Check for HTML response (Vite Fallback) which means API 404
-      const contentType = response.headers.get("content-type");
-      if (!contentType || !contentType.includes("application/json")) {
-         throw new Error("Could not connect to backend server. Please ensure 'node server.cjs' is running.");
-      }
+        const data = await res.json();
 
-      const data = await response.json();
+        if (!res.ok) {
+            throw new Error(data.error || "Login failed. Please check your credentials.");
+        }
 
-      if (!response.ok) {
-          throw new Error(data.error || 'Login failed');
-      }
+        onLogin(data);
+        navigate('/profile');
 
-      onLogin(data);
-      navigate('/profile');
     } catch (err: any) {
-      console.error("Login Error:", err);
-      setError(err.message || "Connection failed. Please check your network.");
+        console.error("Login Error:", err);
+        setError(err.message || "Unable to connect to server.");
     } finally {
-      setIsLoading(false);
+        setIsLoading(false);
     }
   };
 
@@ -136,6 +131,11 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
         <Link to="/signup" className="text-peach-600 font-bold hover:underline">
           Create Account
         </Link>
+      </div>
+      
+      {/* Dev Hint */}
+      <div className="mt-8 pt-4 border-t border-gray-100 text-center text-xs text-gray-400">
+         <p>Default Admin: admin@peachy.market / admin123</p>
       </div>
     </div>
   );
