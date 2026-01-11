@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
-  FileText, ShieldAlert, Truck, Lock, AlertTriangle, CheckCircle, 
-  Ban, Gavel, AlertOctagon, Scale, ChevronRight, ExternalLink, Scroll
+  FileText, Truck, Lock, AlertTriangle, 
+  Gavel, AlertOctagon
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { SEO } from '../components/SEO';
@@ -198,4 +198,110 @@ export const Terms: React.FC = () => {
                 </p>
 
                 <h3 className="font-bold text-slate-900 text-lg mb-4">2. Financial & Legal Consequences</h3>
-                <div className="bg-red-50 border border-red-200 p
+                <div className="bg-red-50 border border-red-200 p-4 rounded-lg mb-4">
+                   <p className="text-sm text-red-800 font-bold mb-2">If you initiate a chargeback without following our dispute resolution process:</p>
+                   <ul className="list-decimal pl-5 space-y-1 text-sm text-red-700">
+                     <li>Your account will be <strong>Immediately and Permanently Banned</strong>.</li>
+                     <li>Your IP address, email, and payment fingerprint will be added to a global blacklist shared with other adult industry merchants.</li>
+                     <li>We will dispute the chargeback with evidence including IP logs, access timestamps, and chat history.</li>
+                     <li>The debt will be sent to a third-party collections agency, which may impact your credit score.</li>
+                     <li>For amounts exceeding $500, we reserve the right to file a police report for Theft of Services (18 Pa.C.S. § 3926).</li>
+                   </ul>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* SHIPPING POLICY TAB */}
+          {activeTab === 'shipping' && (
+            <div className="space-y-8 animate-fadeIn max-w-4xl mx-auto">
+              <div className="border-b border-gray-200 pb-4">
+                <h2 className="text-2xl font-bold text-slate-800 flex items-center">
+                  <Truck className="w-6 h-6 mr-2" /> Shipping & Fulfillment Policy
+                </h2>
+                <p className="text-sm text-slate-500 mt-1">Information regarding digital delivery and physical goods.</p>
+              </div>
+
+              <div className="space-y-6 text-slate-700 text-sm">
+                <section className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                   <h3 className="font-bold text-slate-900 text-lg mb-2">1. Digital Content (Instant Delivery)</h3>
+                   <p className="mb-2">
+                     The vast majority of items on The Peachy Marketplace are digital assets (photos, videos, or links).
+                   </p>
+                   <ul className="list-disc pl-5 space-y-2">
+                     <li>
+                       <strong>Automatic Delivery:</strong> If a Seller has enabled Auto-Delivery, your content is accessible immediately after payment via your "Purchases" tab or sent to your registered email.
+                     </li>
+                     <li>
+                       <strong>Manual Delivery:</strong> For custom content, the Seller has 48 hours to deliver the file via the onsite messaging system. If they fail to do so, you are entitled to a full refund via the Resolution Center.
+                     </li>
+                   </ul>
+                </section>
+
+                <section className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                   <h3 className="font-bold text-slate-900 text-lg mb-2">2. Physical Goods</h3>
+                   <p className="mb-2">
+                     Some sellers may list physical items (e.g. worn items, merchandise). The Peachy Marketplace is a venue and does not warehouse or ship items directly.
+                   </p>
+                   <ul className="list-disc pl-5 space-y-2">
+                     <li>
+                       <strong>Seller Responsibility:</strong> Sellers are solely responsible for packaging, shipping, and providing tracking numbers for physical goods.
+                     </li>
+                     <li>
+                       <strong>Tracking Requirement:</strong> Sellers must provide a valid tracking number within 5 business days of purchase. Failure to do so allows the buyer to claim a "Non-Delivery" refund.
+                     </li>
+                     <li>
+                       <strong>Discrete Shipping:</strong> Sellers are expected to use discrete packaging to protect buyer privacy.
+                     </li>
+                   </ul>
+                </section>
+              </div>
+            </div>
+          )}
+
+          {/* PRIVACY POLICY TAB */}
+          {activeTab === 'privacy' && (
+            <div className="space-y-8 animate-fadeIn max-w-4xl mx-auto">
+              <div className="border-b border-gray-200 pb-4">
+                <h2 className="text-2xl font-bold text-slate-800 flex items-center">
+                  <Lock className="w-6 h-6 mr-2" /> Privacy Policy
+                </h2>
+                <p className="text-sm text-slate-500 mt-1">Your privacy is our priority. We minimize data retention.</p>
+              </div>
+
+              <div className="space-y-6 text-slate-700 text-sm">
+                 <p>
+                   We understand the sensitive nature of this platform. We are committed to protecting your identity and personal data.
+                 </p>
+                 
+                 <section>
+                   <h3 className="font-bold text-slate-900 text-lg mb-2">1. Data Collection</h3>
+                   <ul className="list-disc pl-5 space-y-1">
+                     <li><strong>Account Data:</strong> We collect your email and hashed password.</li>
+                     <li><strong>Verification Data:</strong> ID photos are processed by a secure third-party verification partner and are NOT stored permanently on our public web servers after verification is complete.</li>
+                     <li><strong>Payment Data:</strong> We do not store full credit card numbers. All payments are processed by secure third-party gateways (PayPal, Melio, etc).</li>
+                   </ul>
+                 </section>
+
+                 <section>
+                   <h3 className="font-bold text-slate-900 text-lg mb-2">2. Data Usage</h3>
+                   <p>
+                     We use your data strictly to facilitate transactions, verify age (legal requirement), and prevent fraud. We do not sell your data to marketing agencies.
+                   </p>
+                 </section>
+
+                 <section>
+                   <h3 className="font-bold text-slate-900 text-lg mb-2">3. Data Deletion</h3>
+                   <p>
+                     You may request full account deletion at any time by contacting support. Note that transaction logs must be kept for 7 years for tax and legal compliance (18 U.S.C. § 2257).
+                   </p>
+                 </section>
+              </div>
+            </div>
+          )}
+
+        </div>
+      </div>
+    </div>
+  );
+};
