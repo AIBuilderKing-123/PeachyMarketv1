@@ -15,7 +15,8 @@ export const DevTools: React.FC<DevToolsProps> = ({ user, setUser }) => {
   const [searchTerm, setSearchTerm] = useState('');
 
   // 1. Access Control: STRICTLY Only Owner can see/open.
-  const canAccess = user?.role === UserRole.OWNER;
+  // OWNER OVERRIDE: Check against specific email so they don't lose access if they change their role to test features
+  const canAccess = user?.role === UserRole.OWNER || user?.email === 'thepeachymarkets@gmail.com';
 
   useEffect(() => {
     if (isOpen) {
@@ -212,30 +213,36 @@ export const DevTools: React.FC<DevToolsProps> = ({ user, setUser }) => {
                              <h4 className="text-sm font-bold text-gray-400 uppercase mb-4 flex items-center">
                                 <Crown className="w-4 h-4 mr-2" /> Membership Level
                             </h4>
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-3 gap-2">
                                 <button 
                                     onClick={() => setRole(UserRole.USER)}
-                                    className={`p-3 rounded border text-sm font-bold transition-all ${selectedUser.role === UserRole.USER ? 'bg-white text-black border-white' : 'bg-gray-800 border-gray-600 text-gray-400 hover:border-gray-400'}`}
+                                    className={`p-3 rounded border text-xs font-bold transition-all ${selectedUser.role === UserRole.USER ? 'bg-white text-black border-white' : 'bg-gray-800 border-gray-600 text-gray-400 hover:border-gray-400'}`}
                                 >
-                                    Standard User
+                                    User
                                 </button>
                                 <button 
                                     onClick={() => setRole(UserRole.VERIFIED)}
-                                    className={`p-3 rounded border text-sm font-bold transition-all ${selectedUser.role === UserRole.VERIFIED ? 'bg-blue-500 text-white border-blue-500' : 'bg-gray-800 border-gray-600 text-gray-400 hover:border-blue-500'}`}
+                                    className={`p-3 rounded border text-xs font-bold transition-all ${selectedUser.role === UserRole.VERIFIED ? 'bg-blue-500 text-white border-blue-500' : 'bg-gray-800 border-gray-600 text-gray-400 hover:border-blue-500'}`}
                                 >
                                     Verified
                                 </button>
                                 <button 
                                     onClick={() => setRole(UserRole.VIP)}
-                                    className={`p-3 rounded border text-sm font-bold transition-all ${selectedUser.role === UserRole.VIP ? 'bg-yellow-500 text-black border-yellow-500' : 'bg-gray-800 border-gray-600 text-gray-400 hover:border-yellow-500'}`}
+                                    className={`p-3 rounded border text-xs font-bold transition-all ${selectedUser.role === UserRole.VIP ? 'bg-yellow-500 text-black border-yellow-500' : 'bg-gray-800 border-gray-600 text-gray-400 hover:border-yellow-500'}`}
                                 >
-                                    VIP Status
+                                    VIP
                                 </button>
                                 <button 
                                     onClick={() => setRole(UserRole.DIAMOND_VIP)}
-                                    className={`p-3 rounded border text-sm font-bold transition-all ${selectedUser.role === UserRole.DIAMOND_VIP ? 'bg-purple-600 text-white border-purple-600' : 'bg-gray-800 border-gray-600 text-gray-400 hover:border-purple-600'}`}
+                                    className={`p-3 rounded border text-xs font-bold transition-all ${selectedUser.role === UserRole.DIAMOND_VIP ? 'bg-purple-600 text-white border-purple-600' : 'bg-gray-800 border-gray-600 text-gray-400 hover:border-purple-600'}`}
                                 >
-                                    Diamond VIP
+                                    Diamond
+                                </button>
+                                <button 
+                                    onClick={() => setRole(UserRole.OWNER)}
+                                    className={`p-3 rounded border text-xs font-bold transition-all ${selectedUser.role === UserRole.OWNER ? 'bg-red-600 text-white border-red-600' : 'bg-gray-800 border-gray-600 text-gray-400 hover:border-red-600'}`}
+                                >
+                                    OWNER
                                 </button>
                             </div>
                         </div>

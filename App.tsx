@@ -8,6 +8,7 @@ import { Marketplace } from './pages/Marketplace';
 import { CamRooms } from './pages/CamRooms';
 import { Profile } from './pages/Profile';
 import { Admin } from './pages/Admin';
+import { Branding } from './pages/Branding';
 import { Verification } from './pages/Verification';
 import { Messages } from './pages/Messages';
 import { Contact } from './pages/Contact';
@@ -19,7 +20,7 @@ import { Disputes } from './pages/Disputes';
 import { Referrals } from './pages/Referrals';
 import { Payouts } from './pages/Payouts';
 import { INITIAL_CAM_ROOMS } from './constants';
-import { User, CamRoom } from './types';
+import { User, CamRoom, UserRole } from './types';
 
 function App() {
   const [ageVerified, setAgeVerified] = useState(false);
@@ -101,6 +102,9 @@ function App() {
     localStorage.setItem('peachy_session', JSON.stringify(updatedUser));
   };
 
+  // Helper check for owner
+  const isOwner = user?.role === UserRole.OWNER || user?.email === 'thepeachymarkets@gmail.com';
+
   if (!ageVerified) {
     return <AgeGate onVerify={handleAgeVerify} onReject={handleAgeReject} />;
   }
@@ -136,7 +140,11 @@ function App() {
           <Route path="/terms" element={<Terms />} />
           <Route path="/disputes" element={<Disputes />} />
           <Route path="/referrals" element={<Referrals />} />
-          <Route path="/admin" element={(user?.role === 'ADMIN' || user?.role === 'OWNER') ? <Admin /> : <Navigate to="/" />} />
+          
+          {/* Admin Routes */}
+          <Route path="/admin" element={(user?.role === 'ADMIN' || isOwner) ? <Admin /> : <Navigate to="/" />} />
+          <Route path="/admin/branding" element={isOwner ? <Branding user={user} /> : <Navigate to="/" />} />
+          
           <Route path="/contact" element={<Contact />} />
           <Route path="/payouts" element={user ? <Payouts user={user} onUpdateUser={handleUserUpdate} /> : <Navigate to="/login" />} />
         </Routes>

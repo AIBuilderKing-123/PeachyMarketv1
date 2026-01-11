@@ -14,10 +14,18 @@ export const Memberships: React.FC<MembershipsProps> = ({ user, onUpdateUser }) 
   const navigate = useNavigate();
   const [checkoutPlan, setCheckoutPlan] = useState<{name: string, role: UserRole, price: number} | null>(null);
 
+  // Owner Check
+  const isOwner = user?.role === UserRole.OWNER || user?.email === 'thepeachymarkets@gmail.com';
+
   const initiateSubscribe = (planName: string, targetRole: UserRole, price: number) => {
     if (!user) {
       navigate('/login');
       return;
+    }
+
+    if (isOwner) {
+        alert("You are the Owner! You already have all privileges.");
+        return;
     }
 
     // Basic logic to prevent downgrading via this UI
@@ -53,6 +61,8 @@ export const Memberships: React.FC<MembershipsProps> = ({ user, onUpdateUser }) 
       if (!user) return role === UserRole.USER || role === UserRole.VERIFIED;
       // If user is verified, they are effectively on the "Free" plan if not VIP
       if (role === UserRole.VERIFIED) return user.role === UserRole.VERIFIED || user.role === UserRole.USER;
+      // Owner Logic: Owner has all plans essentially, but for UI display we show "Included"
+      if (isOwner) return true;
       return user.role === role;
   };
 
@@ -71,7 +81,7 @@ export const Memberships: React.FC<MembershipsProps> = ({ user, onUpdateUser }) 
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
         {/* Standard Plan */}
-        <div className={`bg-white rounded-2xl p-8 shadow-sm border ${isCurrentPlan(UserRole.VERIFIED) ? 'border-green-500 ring-2 ring-green-500/20' : 'border-gray-100'} transition-all`}>
+        <div className={`bg-white rounded-2xl p-8 shadow-sm border ${isCurrentPlan(UserRole.VERIFIED) && !isOwner ? 'border-green-500 ring-2 ring-green-500/20' : 'border-gray-100'} transition-all`}>
           <div className="flex justify-center mb-6">
             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
               <Star className="w-8 h-8 text-gray-500" />
@@ -98,15 +108,15 @@ export const Memberships: React.FC<MembershipsProps> = ({ user, onUpdateUser }) 
           </ul>
           <button 
             disabled 
-            className={`w-full py-3 rounded-xl border-2 font-bold cursor-default ${isCurrentPlan(UserRole.VERIFIED) ? 'border-green-500 text-green-600 bg-green-50' : 'border-gray-200 text-gray-400'}`}
+            className={`w-full py-3 rounded-xl border-2 font-bold cursor-default ${isCurrentPlan(UserRole.VERIFIED) && !isOwner ? 'border-green-500 text-green-600 bg-green-50' : 'border-gray-200 text-gray-400'}`}
           >
-            {isCurrentPlan(UserRole.VERIFIED) ? 'Current Plan' : 'Included'}
+            {isOwner ? 'Included' : isCurrentPlan(UserRole.VERIFIED) ? 'Current Plan' : 'Included'}
           </button>
         </div>
 
         {/* VIP Plan */}
-        <div className={`bg-white rounded-2xl p-8 shadow-xl border-2 ${isCurrentPlan(UserRole.VIP) ? 'border-peach-500 ring-4 ring-peach-500/20' : 'border-peach-400'} transform md:scale-105 relative z-10 transition-all`}>
-          {isCurrentPlan(UserRole.VIP) ? (
+        <div className={`bg-white rounded-2xl p-8 shadow-xl border-2 ${isCurrentPlan(UserRole.VIP) && !isOwner ? 'border-peach-500 ring-4 ring-peach-500/20' : 'border-peach-400'} transform md:scale-105 relative z-10 transition-all`}>
+          {isCurrentPlan(UserRole.VIP) && !isOwner ? (
              <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-green-600 text-white px-4 py-1 rounded-full text-sm font-bold shadow-md whitespace-nowrap flex items-center">
                  <Check className="w-3 h-3 mr-1" /> ACTIVE
              </div>
@@ -140,7 +150,11 @@ export const Memberships: React.FC<MembershipsProps> = ({ user, onUpdateUser }) 
               <Check className="w-5 h-5 text-peach-500 mr-3 shrink-0" /> Exclusive VIP Badge
             </li>
           </ul>
-          {isCurrentPlan(UserRole.VIP) ? (
+          {isOwner ? (
+              <button disabled className="w-full py-4 bg-gray-100 text-gray-500 font-bold rounded-xl cursor-default border border-gray-200">
+                  Included in Owner
+              </button>
+          ) : isCurrentPlan(UserRole.VIP) ? (
               <button disabled className="w-full py-4 bg-gray-100 text-gray-500 font-bold rounded-xl cursor-default border border-gray-200">
                   Plan Active
               </button>
@@ -160,7 +174,7 @@ export const Memberships: React.FC<MembershipsProps> = ({ user, onUpdateUser }) 
         </div>
 
         {/* Diamond VIP Plan */}
-        <div className={`bg-slate-900 rounded-2xl p-8 shadow-2xl border ${isCurrentPlan(UserRole.DIAMOND_VIP) ? 'border-blue-500 ring-4 ring-blue-500/30' : 'border-slate-700'} text-white relative overflow-hidden transition-all`}>
+        <div className={`bg-slate-900 rounded-2xl p-8 shadow-2xl border ${isCurrentPlan(UserRole.DIAMOND_VIP) && !isOwner ? 'border-blue-500 ring-4 ring-blue-500/30' : 'border-slate-700'} text-white relative overflow-hidden transition-all`}>
           <div className="absolute top-0 right-0 w-40 h-40 bg-blue-500/20 rounded-full blur-3xl pointer-events-none"></div>
           <div className="flex justify-center mb-6">
             <div className="w-16 h-16 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-full flex items-center justify-center shadow-lg">
@@ -195,7 +209,11 @@ export const Memberships: React.FC<MembershipsProps> = ({ user, onUpdateUser }) 
                <Check className="w-5 h-5 text-blue-400 mr-3 shrink-0" /> Access to Referral Links
              </li>
           </ul>
-          {isCurrentPlan(UserRole.DIAMOND_VIP) ? (
+          {isOwner ? (
+               <button disabled className="w-full py-4 bg-blue-900/50 text-blue-200 border border-blue-800 font-bold rounded-xl cursor-default flex items-center justify-center">
+                  <Gem className="w-4 h-4 mr-2" /> You Own This Place
+               </button>
+          ) : isCurrentPlan(UserRole.DIAMOND_VIP) ? (
                <button disabled className="w-full py-4 bg-blue-900/50 text-blue-200 border border-blue-800 font-bold rounded-xl cursor-default flex items-center justify-center">
                   <Gem className="w-4 h-4 mr-2" /> You are Legendary
                </button>

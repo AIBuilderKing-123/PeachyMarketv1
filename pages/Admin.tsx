@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Users, FileText, Activity, MessageSquare, ShieldAlert, CheckCircle, XCircle, AlertTriangle, ExternalLink } from 'lucide-react';
+import { Users, FileText, Activity, MessageSquare, ShieldAlert, CheckCircle, XCircle, AlertTriangle, ExternalLink, Image } from 'lucide-react';
 import { SEO } from '../components/SEO';
+import { useNavigate } from 'react-router-dom';
 
 // Start with empty/zero data
 const TRAFFIC_DATA = [
@@ -15,6 +16,7 @@ const TRAFFIC_DATA = [
 ];
 
 export const Admin: React.FC = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'verification' | 'users' | 'stats' | 'reports' | 'support'>('stats');
   
   // Empty State for Data Lists
@@ -218,6 +220,16 @@ export const Admin: React.FC = () => {
               {tab.label}
             </button>
           ))}
+          
+          <div className="border-t border-gray-100 my-2 pt-2">
+              <button 
+                onClick={() => navigate('/admin/branding')}
+                className="w-full flex items-center px-4 py-3 rounded-lg text-sm font-medium mb-1 transition-colors text-slate-600 hover:bg-gray-50 hover:text-blue-600"
+              >
+                  <Image className="w-4 h-4 mr-3" />
+                  Site Branding
+              </button>
+          </div>
        </div>
 
        {/* Main Content */}

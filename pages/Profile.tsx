@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { User, UserRole, Transaction } from '../types';
-import { Camera, Edit, UserPlus, MessageCircle, Flag, ArrowUpRight, ArrowDownLeft, Wallet, Calendar, Clock, DollarSign, Coins, Heart, Users as UsersIcon, Link as LinkIcon, Copy, X, Save, Shield } from 'lucide-react';
+import { Camera, Edit, UserPlus, MessageCircle, Flag, ArrowUpRight, ArrowDownLeft, Wallet, Calendar, Clock, DollarSign, Coins, Heart, Users as UsersIcon, Link as LinkIcon, Copy, X, Save, Shield, Lock } from 'lucide-react';
 import { SEO } from '../components/SEO';
 import { useNavigate } from 'react-router-dom';
 
@@ -26,7 +26,13 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser }) => {
       bio: user.bio || '',
       birthMonth: user.birthMonth || '',
       zodiac: user.zodiac || '',
+      currentPassword: '',
+      newPassword: '',
+      confirmNewPassword: ''
   });
+
+  // OWNER LOGIC: Check by Role OR Email to ensure access persists if role changes
+  const isOwner = user.role === UserRole.OWNER || user.email === 'thepeachymarkets@gmail.com';
 
   const handleFollowToggle = () => {
     try {
@@ -80,8 +86,7 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser }) => {
       if (!file) return;
 
       const isGif = file.type === 'image/gif';
-      const isOwner = user.role === UserRole.OWNER;
-
+      
       // ENFORCE FILE TYPE RULES
       if (isGif && !isOwner) {
           alert("Restricted: Only the Owner can use GIF images. Please upload a JPEG or PNG.");
@@ -101,12 +106,58 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser }) => {
 
   const saveProfile = () => {
       // ENFORCE USERNAME RULES
-      const isOwner = user.role === UserRole.OWNER;
       if (!isOwner && editForm.username.includes(' ')) {
           alert("Validation Error: Screen Name cannot contain spaces.");
           return;
       }
 
+      // PASSWORD CHANGE LOGIC
+      if (editForm.newPassword) {
+          if (editForm.newPassword !== editForm.confirmNewPassword) {
+              alert("Error: New passwords do not match.");
+              return;
+          }
+          if (!editForm.currentPassword) {
+              alert("Error: Current password is required to set a new password.");
+              return;
+          }
+
+          // Validate against database (localStorage)
+          const storedUsers = localStorage.getItem('peachy_users');
+          if (storedUsers) {
+              const users = JSON.parse(storedUsers);
+              const currentUserRecord = users.find((u: any) => u.id === user.id);
+              
+              if (!currentUserRecord || currentUserRecord.password !== editForm.currentPassword) {
+                  alert("Error: Incorrect current password.");
+                  return;
+              }
+
+              // Update password in DB
+              currentUserRecord.password = editForm.newPassword;
+              
+              // Also update the other profile fields while we are at it
+              currentUserRecord.username = editForm.username;
+              currentUserRecord.bio = editForm.bio;
+              currentUserRecord.birthMonth = editForm.birthMonth;
+              currentUserRecord.zodiac = editForm.zodiac;
+              currentUserRecord.avatarUrl = user.avatarUrl; 
+              currentUserRecord.bannerUrl = user.bannerUrl;
+
+              // Save back
+              localStorage.setItem('peachy_users', JSON.stringify(users));
+              
+              // Update Session
+              onUpdateUser({ ...user, ...currentUserRecord }); // Safe update
+              
+              alert("Profile and Password updated successfully!");
+              setIsEditing(false);
+              setEditForm(prev => ({...prev, currentPassword: '', newPassword: '', confirmNewPassword: ''}));
+              return;
+          }
+      }
+
+      // Standard Update (No Password Change)
       onUpdateUser({
           ...user,
           username: editForm.username,
@@ -168,10 +219,10 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser }) => {
         <div className="mt-6 md:mt-2">
            <div className="flex flex-col mb-6">
              <div className="flex items-center flex-wrap gap-2">
-               <h1 className="text-3xl font-bold text-slate-800 mr-2">{user.username}</h1>
-               {user.isVerified && <span className="text-blue-500 bg-blue-50 px-2 py-0.5 rounded text-xs font-bold border border-blue-100">VERIFIED</span>}
-               {user.role === UserRole.VIP && <span className="bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded text-xs font-bold border border-yellow-200">VIP</span>}
-               {user.role === UserRole.OWNER && (
+               <h1 className="text-3xl font-bold text-white mr-2 drop-shadow-md">{user.username}</h1>
+               {user.isVerified && <span className="text-blue-500 bg-blue-50/90 px-2 py-0.5 rounded text-xs font-bold border border-blue-200">VERIFIED</span>}
+               {user.role === UserRole.VIP && <span className="bg-yellow-100/90 text-yellow-700 px-2 py-0.5 rounded text-xs font-bold border border-yellow-200">VIP</span>}
+               {isOwner && (
                  <span className="flex items-center bg-red-600 text-white px-3 py-1 rounded-full text-xs font-bold shadow-md shadow-red-200">
                    <Shield className="w-3 h-3 mr-1" /> OWNER
                  </span>
@@ -180,13 +231,13 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser }) => {
              
              {/* Follower Counts */}
              <div className="flex items-center mt-2 space-x-6">
-                <div className="flex items-center cursor-pointer hover:text-peach-600 transition-colors group">
-                    <span className="font-bold text-slate-800 text-lg mr-1 group-hover:text-peach-600">{followerCount.toLocaleString()}</span>
-                    <span className="text-slate-500 text-sm font-medium">Followers</span>
+                <div className="flex items-center cursor-pointer hover:text-peach-500 transition-colors group">
+                    <span className="font-bold text-gray-200 text-lg mr-1 group-hover:text-peach-500">{followerCount.toLocaleString()}</span>
+                    <span className="text-gray-400 text-sm font-medium group-hover:text-peach-400">Followers</span>
                 </div>
-                <div className="flex items-center cursor-pointer hover:text-peach-600 transition-colors group">
-                    <span className="font-bold text-slate-800 text-lg mr-1 group-hover:text-peach-600">{followingCount.toLocaleString()}</span>
-                    <span className="text-slate-500 text-sm font-medium">Following</span>
+                <div className="flex items-center cursor-pointer hover:text-peach-500 transition-colors group">
+                    <span className="font-bold text-gray-200 text-lg mr-1 group-hover:text-peach-500">{followingCount.toLocaleString()}</span>
+                    <span className="text-gray-400 text-sm font-medium group-hover:text-peach-400">Following</span>
                 </div>
              </div>
            </div>
@@ -243,7 +294,7 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser }) => {
                </div>
 
                {/* Referral Link (Diamond VIP Only) */}
-               {user.role === UserRole.DIAMOND_VIP && (
+               {(user.role === UserRole.DIAMOND_VIP || isOwner) && (
                     <div className="bg-gradient-to-r from-blue-900 to-indigo-900 p-4 rounded-xl shadow-md text-white mt-4 border border-blue-700/50">
                         <h3 className="text-xs font-bold text-blue-200 uppercase tracking-wide mb-2 flex items-center">
                         <LinkIcon className="w-3 h-3 mr-1" /> Referral Link
@@ -266,16 +317,16 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser }) => {
              {/* Middle/Right: Tabbed Content */}
              <div className="md:col-span-2">
                 {/* Tabs */}
-                <div className="flex space-x-4 border-b border-gray-200 mb-4">
+                <div className="flex space-x-4 border-b border-gray-700 mb-4">
                    <button 
                      onClick={() => setActiveTab('about')}
-                     className={`pb-2 px-1 text-sm font-bold transition-colors border-b-2 ${activeTab === 'about' ? 'border-peach-500 text-peach-600' : 'border-transparent text-gray-500 hover:text-slate-700'}`}
+                     className={`pb-2 px-1 text-sm font-bold transition-colors border-b-2 ${activeTab === 'about' ? 'border-peach-500 text-peach-500' : 'border-transparent text-gray-400 hover:text-gray-200'}`}
                    >
                      About Me
                    </button>
                    <button 
                      onClick={() => setActiveTab('wallet')}
-                     className={`pb-2 px-1 text-sm font-bold transition-colors border-b-2 ${activeTab === 'wallet' ? 'border-peach-500 text-peach-600' : 'border-transparent text-gray-500 hover:text-slate-700'}`}
+                     className={`pb-2 px-1 text-sm font-bold transition-colors border-b-2 ${activeTab === 'wallet' ? 'border-peach-500 text-peach-500' : 'border-transparent text-gray-400 hover:text-gray-200'}`}
                    >
                      Transaction History
                    </button>
@@ -354,20 +405,20 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser }) => {
                     <div className="grid grid-cols-2 gap-4">
                         <div className="p-4 border-2 border-dashed border-gray-300 rounded-xl text-center">
                             <p className="text-sm font-bold text-slate-700 mb-1">Profile Picture</p>
-                            <p className="text-xs text-gray-400 mb-3">{user.role === UserRole.OWNER ? 'JPG, PNG, GIF' : 'JPG, PNG'}</p>
+                            <p className="text-xs text-gray-400 mb-3">{isOwner ? 'JPG, PNG, GIF' : 'JPG, PNG'}</p>
                             <input 
                                 type="file" 
-                                accept={user.role === UserRole.OWNER ? "image/jpeg, image/png, image/gif" : "image/jpeg, image/png"}
+                                accept={isOwner ? "image/jpeg, image/png, image/gif" : "image/jpeg, image/png"}
                                 onChange={(e) => handleFileChange(e, 'avatarUrl')}
                                 className="w-full text-xs" 
                             />
                         </div>
                         <div className="p-4 border-2 border-dashed border-gray-300 rounded-xl text-center">
                             <p className="text-sm font-bold text-slate-700 mb-1">Banner Image</p>
-                            <p className="text-xs text-gray-400 mb-3">{user.role === UserRole.OWNER ? 'JPG, PNG, GIF' : 'JPG, PNG'}</p>
+                            <p className="text-xs text-gray-400 mb-3">{isOwner ? 'JPG, PNG, GIF' : 'JPG, PNG'}</p>
                             <input 
                                 type="file" 
-                                accept={user.role === UserRole.OWNER ? "image/jpeg, image/png, image/gif" : "image/jpeg, image/png"}
+                                accept={isOwner ? "image/jpeg, image/png, image/gif" : "image/jpeg, image/png"}
                                 onChange={(e) => handleFileChange(e, 'bannerUrl')}
                                 className="w-full text-xs" 
                             />
@@ -382,10 +433,10 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser }) => {
                             name="username"
                             value={editForm.username}
                             onChange={handleEditChange}
-                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-peach-400 outline-none"
+                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-peach-400 outline-none text-gray-900 bg-white"
                         />
                         <p className="text-xs text-gray-400 mt-1">
-                            {user.role === UserRole.OWNER ? 'Owner Privileges: Spaces Allowed' : 'No spaces allowed.'}
+                            {isOwner ? 'Owner Privileges: Spaces Allowed' : 'No spaces allowed.'}
                         </p>
                     </div>
 
@@ -397,7 +448,7 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser }) => {
                             value={editForm.bio}
                             onChange={handleEditChange}
                             maxLength={1500}
-                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-peach-400 outline-none h-32 resize-none"
+                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-peach-400 outline-none h-32 resize-none text-gray-900 bg-white"
                         />
                     </div>
 
@@ -408,7 +459,7 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser }) => {
                                 name="birthMonth"
                                 value={editForm.birthMonth}
                                 onChange={handleEditChange}
-                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-peach-400 outline-none"
+                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-peach-400 outline-none text-gray-900 bg-white"
                             >
                                 <option value="">Select...</option>
                                 {['January','February','March','April','May','June','July','August','September','October','November','December'].map(m => (
@@ -422,13 +473,55 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser }) => {
                                 name="zodiac"
                                 value={editForm.zodiac}
                                 onChange={handleEditChange}
-                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-peach-400 outline-none"
+                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-peach-400 outline-none text-gray-900 bg-white"
                             >
                                 <option value="">Select...</option>
                                 {['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'].map(z => (
                                     <option key={z} value={z}>{z}</option>
                                 ))}
                             </select>
+                        </div>
+                    </div>
+
+                    {/* Security Section */}
+                    <div className="mt-4 pt-6 border-t border-gray-200">
+                        <h4 className="text-sm font-bold text-slate-800 mb-4 flex items-center">
+                            <Lock className="w-4 h-4 mr-2 text-peach-500" /> Security - Change Password
+                        </h4>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold text-slate-500 mb-1">Current Password</label>
+                                <input 
+                                    type="password"
+                                    name="currentPassword"
+                                    value={editForm.currentPassword}
+                                    onChange={handleEditChange}
+                                    placeholder="Required to change password"
+                                    className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-peach-400 outline-none text-gray-900 bg-white text-sm"
+                                />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 mb-1">New Password</label>
+                                    <input 
+                                        type="password"
+                                        name="newPassword"
+                                        value={editForm.newPassword}
+                                        onChange={handleEditChange}
+                                        className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-peach-400 outline-none text-gray-900 bg-white text-sm"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 mb-1">Confirm New</label>
+                                    <input 
+                                        type="password"
+                                        name="confirmNewPassword"
+                                        value={editForm.confirmNewPassword}
+                                        onChange={handleEditChange}
+                                        className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-peach-400 outline-none text-gray-900 bg-white text-sm"
+                                    />
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

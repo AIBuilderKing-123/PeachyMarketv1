@@ -536,7 +536,7 @@ export const CamRooms: React.FC<CamRoomsProps> = ({ user, onUpdateUser, rooms, o
     <div>
       <div className="flex justify-between items-end mb-10">
         <div>
-          <h1 className="text-4xl font-bold text-gray-100 mb-2">Live Cam Rooms</h1>
+          <h1 className="text-4xl font-bold text-white mb-2 drop-shadow-md">Live Cam Rooms</h1>
           <p className="text-gray-400">10 Exclusive High-Quality Rooms. Book yours today.</p>
         </div>
         <button 

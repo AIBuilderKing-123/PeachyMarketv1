@@ -14,11 +14,22 @@ export const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [installPrompt, setInstallPrompt] = useState<any>(null);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const [logoSrc, setLogoSrc] = useState('/logo.png');
   const profileMenuTimeout = useRef<any>(null);
   
   const navigate = useNavigate();
 
+  // Check if owner by email (hardcoded override) to persist access across roles
+  const isOwner = user?.role === UserRole.OWNER || user?.email === 'thepeachymarkets@gmail.com';
+  const isAdminOrOwner = user?.role === UserRole.ADMIN || isOwner;
+
   useEffect(() => {
+    // Load Custom Logo if exists
+    const storedLogo = localStorage.getItem('site_logo');
+    if (storedLogo) {
+      setLogoSrc(storedLogo);
+    }
+
     const handler = (e: any) => {
       e.preventDefault();
       setInstallPrompt(e);
@@ -59,7 +70,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
     { to: '/contact', label: 'Contact', icon: Mail },
   ];
 
-  if (user?.role === UserRole.ADMIN || user?.role === UserRole.OWNER) {
+  if (isAdminOrOwner) {
     navItems.push({ to: '/admin', label: 'Admin', icon: ShieldCheck });
   }
 
@@ -78,11 +89,11 @@ export const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
             {/* Logo */}
             <div className="flex items-center cursor-pointer group" onClick={() => navigate('/')}>
               <img 
-                src="/logo.png" 
+                src={logoSrc} 
                 alt="Peachy Marketplace Logo" 
                 onError={(e) => {
                   // Fallback if local image not found yet
-                  e.currentTarget.src = "https://img.icons8.com/fluency/96/peach.png";
+                  e.currentTarget.src = "/logo.png";
                   e.currentTarget.onerror = null; 
                 }}
                 className="w-12 h-12 mr-3 object-contain drop-shadow-md group-hover:drop-shadow-[0_0_15px_rgba(244,63,94,0.6)] transition-all duration-300"
@@ -147,7 +158,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
                     <div className="hidden lg:block ml-3 text-left">
                       <p className="text-sm font-bold text-gray-200 hover:text-peach-500 transition-colors flex items-center">
                         {user.username}
-                        {user.role === UserRole.OWNER && <span className="ml-2 text-[10px] bg-red-600 text-white px-1.5 py-0.5 rounded font-bold tracking-wider">OWNER</span>}
+                        {isOwner && <span className="ml-2 text-[10px] bg-red-600 text-white px-1.5 py-0.5 rounded font-bold tracking-wider">OWNER</span>}
                       </p>
                       <p className="text-xs text-gray-500 font-medium">${user.balance.toFixed(2)}</p>
                     </div>
@@ -170,7 +181,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
                          <button onClick={() => { navigate('/memberships'); setIsProfileMenuOpen(false); }} className="flex items-center w-full text-left px-5 py-3 text-sm text-peach-400 hover:bg-gray-700/50 font-bold transition-colors">
                             <Crown className="w-4 h-4 mr-3" /> Upgrade to VIP
                          </button>
-                         {user.role === UserRole.OWNER && (
+                         {isOwner && (
                            <button onClick={() => { navigate('/admin'); setIsProfileMenuOpen(false); }} className="flex items-center w-full text-left px-5 py-3 text-sm text-red-400 hover:bg-gray-700/50 font-bold transition-colors">
                               <ShieldCheck className="w-4 h-4 mr-3" /> Admin Portal
                            </button>
@@ -244,7 +255,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
                <button onClick={() => { navigate('/memberships'); setMobileMenuOpen(false); }} className="flex items-center w-full px-4 py-3 text-base font-bold text-peach-500 hover:bg-gray-800 rounded-lg">
                   <Crown className="w-5 h-5 mr-3" /> Upgrade to VIP
                </button>
-               {user.role === UserRole.OWNER && (
+               {isOwner && (
                   <button onClick={() => { navigate('/admin'); setMobileMenuOpen(false); }} className="flex items-center w-full px-4 py-3 text-base font-bold text-red-500 hover:bg-gray-800 rounded-lg">
                     <ShieldCheck className="w-5 h-5 mr-3" /> Admin Portal
                   </button>
@@ -281,7 +292,10 @@ export const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
       {/* Footer */}
       <footer className="bg-gray-900 text-gray-400 py-16 border-t border-gray-800">
         <div className="container mx-auto px-4 text-center">
-          <h2 className="text-2xl font-bold text-peach-600 mb-6 uppercase tracking-widest">{APP_NAME}</h2>
+          <h2 className="text-2xl font-bold text-peach-600 mb-6 uppercase tracking-widest flex items-center justify-center">
+             <img src={logoSrc} className="w-8 h-8 mr-2 object-contain" alt="" />
+             {APP_NAME}
+          </h2>
           <p className="max-w-xl mx-auto mb-10 text-base text-gray-500 leading-relaxed">
             The ultimate sanctuary for verified adult content. 
             <br/>Secure. Private. Professional.

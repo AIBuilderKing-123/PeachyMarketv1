@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { User, UserRole } from '../types';
-import { AlertOctagon } from 'lucide-react';
+import { AlertOctagon, KeyRound, ArrowLeft, Mail } from 'lucide-react';
 import { SEO } from '../components/SEO';
 
 interface LoginProps {
@@ -13,6 +13,10 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [banReason, setBanReason] = useState('');
+  const [view, setView] = useState<'login' | 'forgot'>('login');
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetSent, setResetSent] = useState(false);
+  
   const navigate = useNavigate();
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -40,18 +44,10 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
         }
 
         // --- OWNER OVERRIDE CHECK ---
-        // If the email matches the owner email, ensure they have the OWNER role.
-        // This fixes the account if it was created before the signup logic changed or if role was lost.
-        if (user.email.toLowerCase().trim() === 'thepeachymarkets@gmail.com' && user.role !== UserRole.OWNER) {
-            user.role = UserRole.OWNER;
-            user.isVerified = true;
-            
-            // Save this update back to localStorage
-            const userIndex = users.findIndex((u: any) => u.id === user.id);
-            if (userIndex !== -1) {
-                users[userIndex] = user;
-                localStorage.setItem('peachy_users', JSON.stringify(users));
-            }
+        // If the email matches the owner email, ensure permissions are recognized internally elsewhere
+        // We don't force role change here to allow "incognito" testing as VIP
+        if (user.email.toLowerCase().trim() === 'thepeachymarkets@gmail.com') {
+            user.isVerified = true; 
         }
 
         // Remove password from session object before saving/setting state
@@ -67,6 +63,66 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
       setError('An error occurred during login. Please try again.');
     }
   };
+
+  const handleForgotSubmit = (e: React.FormEvent) => {
+      e.preventDefault();
+      // Simulate sending email
+      setResetSent(true);
+      setTimeout(() => {
+          // Reset view after a delay
+          setResetEmail('');
+          setResetSent(false);
+          setView('login');
+      }, 3000);
+  };
+
+  if (view === 'forgot') {
+      return (
+        <div className="max-w-md mx-auto mt-16 p-8 bg-white rounded-2xl shadow-xl border border-peach-100">
+            <SEO title="Reset Password" />
+            <button onClick={() => setView('login')} className="flex items-center text-sm text-gray-500 hover:text-peach-600 mb-6 font-bold">
+                <ArrowLeft className="w-4 h-4 mr-1" /> Back to Login
+            </button>
+            <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-peach-100 rounded-full flex items-center justify-center mx-auto mb-4 text-peach-500">
+                    <KeyRound className="w-8 h-8" />
+                </div>
+                <h1 className="text-2xl font-bold text-slate-800">Forgot Password?</h1>
+                <p className="text-slate-500 text-sm mt-2">Enter your email address and we'll send you a link to reset your password.</p>
+            </div>
+            
+            {resetSent ? (
+                <div className="bg-green-50 border border-green-200 rounded-xl p-6 text-center animate-fadeIn">
+                    <div className="flex justify-center mb-3">
+                        <Mail className="w-8 h-8 text-green-500" />
+                    </div>
+                    <h3 className="text-green-800 font-bold mb-1">Link Sent!</h3>
+                    <p className="text-green-700 text-sm">Check your inbox for instructions.</p>
+                </div>
+            ) : (
+                <form onSubmit={handleForgotSubmit} className="space-y-6">
+                    <div>
+                        <label className="block text-sm font-bold text-slate-700 mb-2">Email Address</label>
+                        <input
+                            type="email"
+                            required
+                            value={resetEmail}
+                            onChange={(e) => setResetEmail(e.target.value)}
+                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-peach-400 outline-none text-gray-900"
+                            placeholder="you@example.com"
+                        />
+                    </div>
+                    <button
+                        type="submit"
+                        className="w-full py-3 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-xl shadow-lg transition-transform active:scale-95"
+                    >
+                        Send Reset Link
+                    </button>
+                </form>
+            )}
+        </div>
+      );
+  }
 
   return (
     <div className="max-w-md mx-auto mt-16 p-8 bg-white rounded-2xl shadow-xl border border-peach-100">
@@ -108,7 +164,12 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
         </div>
 
         <div>
-          <label className="block text-sm font-bold text-slate-700 mb-2">Password</label>
+          <div className="flex justify-between items-center mb-2">
+            <label className="block text-sm font-bold text-slate-700">Password</label>
+            <button type="button" onClick={() => setView('forgot')} className="text-xs text-peach-600 font-bold hover:underline">
+                Forgot Password?
+            </button>
+          </div>
           <input
             type="password"
             required

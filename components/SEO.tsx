@@ -17,10 +17,27 @@ export const SEO: React.FC<SEOProps> = ({
 }) => {
   const fullTitle = `${title} | ${APP_NAME}`;
   
-  // Ensure image is an absolute URL for social cards to work
-  // Replace 'https://peachy.market' with your actual domain when deployed
+  // 1. Check for overrides in LocalStorage (Public URL is preferred for meta tags)
+  const storedPublicUrl = localStorage.getItem('site_logo_public_url');
+  const storedInternalLogo = localStorage.getItem('site_logo'); // DataURL
+
+  // 2. Determine best image source
+  let finalImage = image;
+  if (image === '/logo.png') {
+      // If using default logo, try to use configured logo
+      if (storedPublicUrl) {
+          finalImage = storedPublicUrl;
+      } else if (storedInternalLogo) {
+          // Note: DataURLs often don't work in meta tags for social scrapers, but work for browser tabs
+          finalImage = storedInternalLogo;
+      }
+  }
+
+  // 3. Ensure absolute URL if it's a relative path (and not a DataURL)
   const siteDomain = 'https://peachy.market'; 
-  const absoluteImage = image.startsWith('http') ? image : `${siteDomain}${image.startsWith('/') ? '' : '/'}${image}`;
+  const absoluteImage = finalImage.startsWith('http') || finalImage.startsWith('data:') 
+    ? finalImage 
+    : `${siteDomain}${finalImage.startsWith('/') ? '' : '/'}${finalImage}`;
 
   return (
     <Helmet>
