@@ -29,6 +29,11 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
             body: JSON.stringify({ email, password })
         });
 
+        const contentType = res.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+            throw new Error("Server Error: API not reachable (Received HTML instead of JSON). Check server logs.");
+        }
+
         const data = await res.json();
 
         if (!res.ok) {
@@ -135,7 +140,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
       
       {/* Dev Hint */}
       <div className="mt-8 pt-4 border-t border-gray-100 text-center text-xs text-gray-400">
-         <p>Default Admin: admin@peachy.market / admin123</p>
+         <p>Default Admin: admin@peachy.market / admin</p>
       </div>
     </div>
   );
