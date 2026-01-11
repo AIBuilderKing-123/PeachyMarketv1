@@ -29,8 +29,6 @@ const loadPayPalScript = (clientId: string) => {
         
         existingScript.addEventListener('load', onScriptLoad);
         existingScript.addEventListener('error', onScriptError);
-        
-        // Cleanup listeners if promise settles (optional optimization, omitted for brevity)
         return;
     }
 
@@ -39,8 +37,6 @@ const loadPayPalScript = (clientId: string) => {
     script.id = scriptId;
     script.src = `https://www.paypal.com/sdk/js?client-id=${clientId}&currency=USD&intent=capture&components=buttons&enable-funding=venmo`;
     script.async = true;
-    
-    // Add data attribute to help with debugging/namespace
     script.setAttribute('data-namespace', 'paypal_sdk');
 
     script.onload = () => resolve((window as any).paypal);
@@ -63,7 +59,6 @@ export const PayPalButton: React.FC<PayPalButtonProps> = ({ amount, description,
   const totalAmount = (amount + serviceFee).toFixed(2);
   const safeDescription = (description || "Purchase").replace(/[^\w\s\-\.\(\)\$\%\#]/gi, '').substring(0, 120);
 
-  // Hardcoded Sandbox Client ID
   const CLIENT_ID = 'AbkHNTbccKTux5lsE5nCi7BHsKT-Qpbmse2XU5T3J4pUKrLUle6BtwLm0LaIuSygsz0rq2MrTnlGcg-k';
 
   useEffect(() => {
@@ -83,10 +78,8 @@ export const PayPalButton: React.FC<PayPalButtonProps> = ({ amount, description,
   }, []);
 
   useEffect(() => {
-    // If not ready or in simulation mode, skip actual render
     if (!isSdkReady || simulationMode || !paypalRef.current) return;
     
-    // Cleanup existing buttons in the container to avoid duplicates
     if (paypalRef.current.innerHTML !== "") {
         paypalRef.current.innerHTML = "";
     }
@@ -137,8 +130,7 @@ export const PayPalButton: React.FC<PayPalButtonProps> = ({ amount, description,
                     
                     console.error("PayPal Component Error:", msg);
                     
-                    // Known issue: "Can not read window host" often happens in preview iframes
-                    // We switch to simulation mode to allow testing to continue
+                    // Critical Fix for Preview/Iframe environments
                     if (msg.includes("window") || msg.includes("host") || msg.includes("popup")) {
                         if (isMounted.current) setSimulationMode(true);
                     } else {
@@ -151,7 +143,6 @@ export const PayPalButton: React.FC<PayPalButtonProps> = ({ amount, description,
             });
 
             if (paypalRef.current && isMounted.current) {
-                // Wrap render in try/catch for synchronous render errors
                 try {
                     await button.render(paypalRef.current);
                     buttonInstance.current = button;
@@ -178,7 +169,6 @@ export const PayPalButton: React.FC<PayPalButtonProps> = ({ amount, description,
   }, [isSdkReady, totalAmount, safeDescription, customId, simulationMode]);
 
   const handleSimulateSuccess = () => {
-      // Mock PayPal Response Object
       const mockDetails = {
           id: `MOCK-${Date.now()}`,
           status: 'COMPLETED',
@@ -199,7 +189,6 @@ export const PayPalButton: React.FC<PayPalButtonProps> = ({ amount, description,
       onSuccess(mockDetails);
   };
 
-  // 1. Critical Error State
   if (errorMessage) {
     return (
       <div className="bg-red-50 text-red-700 p-4 rounded-xl text-xs font-bold text-center border border-red-200">
@@ -209,7 +198,6 @@ export const PayPalButton: React.FC<PayPalButtonProps> = ({ amount, description,
     );
   }
 
-  // 2. Simulation Mode (Fallback)
   if (simulationMode) {
       return (
           <div className="w-full animate-fadeIn">
@@ -242,7 +230,6 @@ export const PayPalButton: React.FC<PayPalButtonProps> = ({ amount, description,
       );
   }
 
-  // 3. Loading State
   if (!isSdkReady) {
       return (
           <div className="w-full h-[150px] bg-gray-100 rounded-xl animate-pulse flex items-center justify-center text-gray-400 text-sm border border-gray-200">
@@ -251,7 +238,6 @@ export const PayPalButton: React.FC<PayPalButtonProps> = ({ amount, description,
       );
   }
 
-  // 4. Standard PayPal Button
   return (
     <div className="w-full animate-fadeIn">
       <div className="bg-gray-50 border border-gray-200 p-4 rounded-xl mb-4 text-center shadow-sm">
