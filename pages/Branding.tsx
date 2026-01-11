@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { User, UserRole } from '../types';
-import { Upload, Save, Globe, Layout, Image as ImageIcon, AlertTriangle, CheckCircle, RefreshCw, ArrowLeft } from 'lucide-react';
+import { Upload, Save, Globe, Layout, Image as ImageIcon, AlertTriangle, CheckCircle, RefreshCw, ArrowLeft, Wand2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { SEO } from '../components/SEO';
 
@@ -13,6 +13,7 @@ export const Branding: React.FC<BrandingProps> = ({ user }) => {
   const [logoUrl, setLogoUrl] = useState<string>('/logo.png');
   const [publicUrl, setPublicUrl] = useState<string>('');
   const [fileSizeError, setFileSizeError] = useState<string>('');
+  const [urlWarning, setUrlWarning] = useState<string>('');
   
   // Access Control: Owner Only
   const isOwner = user?.role === UserRole.OWNER || user?.email === 'thepeachymarkets@gmail.com';
@@ -55,14 +56,43 @@ export const Branding: React.FC<BrandingProps> = ({ user }) => {
     }
   };
 
+  const validateAndCleanUrl = (url: string) => {
+      let cleaned = url.trim();
+      setUrlWarning('');
+
+      // Auto-Fix Imgur Gallery Links (e.g., imgur.com/a/XYZ -> i.imgur.com/XYZ.png)
+      if (cleaned.includes('imgur.com/a/')) {
+          const idMatch = cleaned.match(/imgur\.com\/a\/([a-zA-Z0-9]+)/);
+          if (idMatch && idMatch[1]) {
+              cleaned = `https://i.imgur.com/${idMatch[1]}.png`;
+              setUrlWarning('Auto-corrected Imgur Gallery link to Direct Image Link.');
+          }
+      } else if (cleaned.includes('imgur.com') && !cleaned.includes('i.imgur.com')) {
+           // Handle non-gallery but non-direct links (e.g. imgur.com/XYZ)
+           const idMatch = cleaned.match(/imgur\.com\/([a-zA-Z0-9]+)/);
+           if (idMatch && idMatch[1]) {
+               cleaned = `https://i.imgur.com/${idMatch[1]}.png`;
+               setUrlWarning('Auto-corrected Imgur Link to Direct Image Link.');
+           }
+      }
+
+      setPublicUrl(cleaned);
+  };
+
   const handleSave = () => {
       try {
           localStorage.setItem('site_logo', logoUrl);
+          
           if (publicUrl) {
+              if (!publicUrl.startsWith('http')) {
+                  alert("Error: Public URL must start with http:// or https://");
+                  return;
+              }
               localStorage.setItem('site_logo_public_url', publicUrl);
           } else {
               localStorage.removeItem('site_logo_public_url');
           }
+          
           alert("Branding settings saved successfully! The site logo has been updated.");
           window.location.reload(); // Reload to apply changes globally
       } catch (err) {
@@ -136,23 +166,33 @@ export const Branding: React.FC<BrandingProps> = ({ user }) => {
                     <div className="bg-blue-900/20 border border-blue-900/50 p-4 rounded-xl mb-4">
                         <div className="flex">
                             <AlertTriangle className="w-5 h-5 text-blue-400 mr-3 shrink-0" />
-                            <p className="text-xs text-blue-200 leading-relaxed">
-                                <strong>Why do I need a URL?</strong> Social media scrapers (Facebook, Discord, Twitter) cannot see files uploaded locally to the browser. 
-                                To fix the "broken poop" image, upload your logo to a host (like Imgur) and paste the link here.
-                                <br/><br/>
-                                <span className="font-bold">Recommendation:</span> Use the Imgur link provided: <code>https://i.imgur.com/odttYiB.png</code>
-                            </p>
+                            <div className="text-xs text-blue-200 leading-relaxed">
+                                <p className="mb-2"><strong>Critical:</strong> Social media (Facebook, Discord, Twitter) cannot see files uploaded locally. You must provide a <strong>Direct Image URL</strong>.</p>
+                                <p>If you paste an Imgur Gallery link (e.g. <code>imgur.com/a/xyz</code>), we will try to auto-fix it to a direct image link (<code>i.imgur.com/xyz.png</code>).</p>
+                            </div>
                         </div>
                     </div>
 
                     <label className="block text-sm font-bold text-gray-300 mb-2">Public Image URL</label>
-                    <input 
-                        type="text" 
-                        value={publicUrl}
-                        onChange={(e) => setPublicUrl(e.target.value)}
-                        placeholder="https://i.imgur.com/odttYiB.png"
-                        className="w-full p-3 bg-gray-900 border border-gray-600 rounded-xl text-white focus:border-blue-500 outline-none"
-                    />
+                    <div className="relative">
+                        <input 
+                            type="text" 
+                            value={publicUrl}
+                            onChange={(e) => validateAndCleanUrl(e.target.value)}
+                            placeholder="https://i.imgur.com/odttYiB.png"
+                            className="w-full p-3 bg-gray-900 border border-gray-600 rounded-xl text-white focus:border-blue-500 outline-none pr-10"
+                        />
+                        {publicUrl && (
+                            <div className="absolute right-3 top-3">
+                                <CheckCircle className="w-5 h-5 text-green-500" />
+                            </div>
+                        )}
+                    </div>
+                    {urlWarning && (
+                        <p className="text-xs text-yellow-400 mt-2 flex items-center">
+                            <Wand2 className="w-3 h-3 mr-1" /> {urlWarning}
+                        </p>
+                    )}
                 </div>
 
                 {/* Actions */}
@@ -208,9 +248,13 @@ export const Branding: React.FC<BrandingProps> = ({ user }) => {
                             <p className="text-xs text-gray-400 line-clamp-2">The Ultimate Marketplace for Sex Workers. Secure, Verified, and Professional.</p>
                         </div>
                     </div>
-                    {!publicUrl && (
+                    {!publicUrl ? (
                         <p className="text-xs text-red-400 mt-2 flex items-center justify-center">
                             <AlertTriangle className="w-3 h-3 mr-1" /> External preview requires Public URL
+                        </p>
+                    ) : (
+                        <p className="text-xs text-green-400 mt-2 flex items-center justify-center">
+                            <CheckCircle className="w-3 h-3 mr-1" /> Preview Ready
                         </p>
                     )}
                 </div>
