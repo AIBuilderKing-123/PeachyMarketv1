@@ -324,7 +324,7 @@ export const Disputes: React.FC = () => {
                       onChange={e => setFormData({...formData, transactionId: e.target.value})}
                     />
                   </div>
-                  <p className="text-xs text-gray-400 mt-1 ml-1">You can find this in your Wallet > Transaction History.</p>
+                  <p className="text-xs text-gray-400 mt-1 ml-1">You can find this in your Wallet &gt; Transaction History.</p>
                 </div>
 
                 <div>
