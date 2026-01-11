@@ -28,7 +28,7 @@ export const Marketplace: React.FC<MarketplaceProps> = ({ user, onUpdateUser }) 
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
   const [previewImage, setPreviewImage] = useState<string>('https://picsum.photos/400/300?grayscale');
 
-  // Simulate Live Viewers & View Counts
+  // Simulate Live Viewers & View Counts - Reduced Frequency for Performance
   useEffect(() => {
     const interval = setInterval(() => {
       setListings(prev => prev.map(item => {
@@ -45,7 +45,7 @@ export const Marketplace: React.FC<MarketplaceProps> = ({ user, onUpdateUser }) 
           views: item.views + viewIncrement
         };
       }));
-    }, 3000); 
+    }, 10000); // 10 Seconds
 
     return () => clearInterval(interval);
   }, []);

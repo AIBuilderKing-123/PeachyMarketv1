@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { User, UserRole, Transaction } from '../types';
-import { Camera, Edit, Wallet, Calendar, Clock, DollarSign, Coins, Link as LinkIcon, Copy, X, Save, Lock, PlusCircle, ArrowUpCircle, ArrowDownCircle, Shield } from 'lucide-react';
+import { Camera, Edit, Wallet, Calendar, Clock, DollarSign, Coins, Link as LinkIcon, Copy, X, Save, Shield, ArrowDownCircle, ArrowUpCircle } from 'lucide-react';
 import { SEO } from '../components/SEO';
 import { useNavigate } from 'react-router-dom';
 import { PayPalButton } from '../components/PayPalButton';
@@ -20,7 +20,6 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser }) => {
   const [showDepositModal, setShowDepositModal] = useState(false);
   const [depositAmount, setDepositAmount] = useState('');
   
-  // Social Stats State (Reset to 0)
   const [followerCount, setFollowerCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
 
@@ -29,10 +28,7 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser }) => {
       username: user.username,
       bio: user.bio || '',
       birthMonth: user.birthMonth || '',
-      zodiac: user.zodiac || '',
-      currentPassword: '',
-      newPassword: '',
-      confirmNewPassword: ''
+      zodiac: user.zodiac || ''
   });
 
   const isOwner = user.role === UserRole.OWNER || user.email === 'thepeachymarkets@gmail.com';
@@ -47,18 +43,15 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser }) => {
     if (!amount || isNaN(amount)) return;
     
     try {
-        const response = await fetch('/api/user/deposit', {
+        await fetch('/api/user/deposit', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ userId: user.id, amount })
         });
-        
-        const updatedUser = await response.json();
-        
-        // Update User Balance in App
+
+        const updatedUser = { ...user, balance: user.balance + amount };
         onUpdateUser(updatedUser);
         
-        // Add Local Transaction Record (In a real app, you'd fetch this from API too)
         const newTx: Transaction = {
             id: details.id || `dep-${Date.now()}`,
             type: 'DEPOSIT',
@@ -72,9 +65,10 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser }) => {
         setShowDepositModal(false);
         setDepositAmount('');
         alert(`Success! $${amount.toFixed(2)} has been added to your balance.`);
-
+        
     } catch (e) {
-        alert("Server Sync Error: Money collected but failed to update balance. Contact Admin.");
+        console.error("Deposit Error:", e);
+        alert("Transaction recorded but server update failed. Please contact support.");
     }
   };
 
@@ -118,42 +112,38 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser }) => {
   };
 
   const saveProfile = async () => {
-      // Validate
       if (!isOwner && editForm.username.includes(' ')) {
           alert("Validation Error: Screen Name cannot contain spaces.");
           return;
       }
 
-      const payload: any = {
-          id: user.id,
+      const updatedUser = {
+          ...user,
           username: editForm.username,
           bio: editForm.bio,
           birthMonth: editForm.birthMonth,
           zodiac: editForm.zodiac
       };
 
-      if (editForm.newPassword) {
-          if (editForm.newPassword !== editForm.confirmNewPassword) return alert("New passwords do not match.");
-          payload.password = editForm.newPassword;
-      }
-
       try {
-          const response = await fetch('/api/user/update', {
+          const res = await fetch('/api/user/update', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(payload)
+              body: JSON.stringify(updatedUser)
           });
-          const updatedUser = await response.json();
+          if(!res.ok) throw new Error("Failed to save");
+          
           onUpdateUser(updatedUser);
           setIsEditing(false);
           alert("Profile updated successfully!");
       } catch (e) {
-          alert("Failed to update profile on server.");
+          console.error(e);
+          alert("Failed to update profile on server. Check connection.");
       }
   };
 
   return (
-    <div className="max-w-4xl mx-auto relative">
+    <div className="max-w-4xl mx-auto relative animate-fadeIn">
       <SEO 
         title={`${user.username}'s Profile`} 
         description={`Check out ${user.username} on The Peachy Marketplace.`}
@@ -425,9 +415,9 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser }) => {
 
       {/* EDIT PROFILE MODAL */}
       {isEditing && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fadeIn">
-            <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-                <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fadeIn overflow-y-auto">
+            <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl flex flex-col max-h-[90vh]">
+                <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50 shrink-0">
                     <h3 className="font-bold text-lg text-slate-800">Customize Profile</h3>
                     <button onClick={() => setIsEditing(false)} className="text-gray-400 hover:text-gray-600"><X className="w-6 h-6"/></button>
                 </div>
@@ -509,51 +499,9 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser }) => {
                             </select>
                         </div>
                     </div>
-
-                    {/* Security Section */}
-                    <div className="mt-4 pt-6 border-t border-gray-200">
-                        <h4 className="text-sm font-bold text-slate-800 mb-4 flex items-center">
-                            <Lock className="w-4 h-4 mr-2 text-peach-500" /> Security - Change Password
-                        </h4>
-                        <div className="space-y-4">
-                            <div>
-                                <label className="block text-xs font-bold text-slate-500 mb-1">Current Password</label>
-                                <input 
-                                    type="password"
-                                    name="currentPassword"
-                                    value={editForm.currentPassword}
-                                    onChange={handleEditChange}
-                                    placeholder="Required to change password"
-                                    className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-peach-400 outline-none text-gray-900 bg-white text-sm"
-                                />
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-500 mb-1">New Password</label>
-                                    <input 
-                                        type="password"
-                                        name="newPassword"
-                                        value={editForm.newPassword}
-                                        onChange={handleEditChange}
-                                        className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-peach-400 outline-none text-gray-900 bg-white text-sm"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-500 mb-1">Confirm New</label>
-                                    <input 
-                                        type="password"
-                                        name="confirmNewPassword"
-                                        value={editForm.confirmNewPassword}
-                                        onChange={handleEditChange}
-                                        className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-peach-400 outline-none text-gray-900 bg-white text-sm"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                 </div>
 
-                <div className="p-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-2">
+                <div className="p-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-2 shrink-0">
                     <button onClick={() => setIsEditing(false)} className="px-6 py-3 text-gray-500 font-bold hover:bg-gray-200 rounded-xl transition">Cancel</button>
                     <button onClick={saveProfile} className="px-6 py-3 bg-peach-500 text-white font-bold rounded-xl hover:bg-peach-600 transition shadow-lg flex items-center">
                         <Save className="w-4 h-4 mr-2" /> Save Changes

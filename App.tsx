@@ -48,7 +48,7 @@ function App() {
     }
   }, []);
 
-  // Simulate Cam Room Viewers
+  // Simulate Cam Room Viewers - Reduced Frequency for Mobile Performance
   useEffect(() => {
     const interval = setInterval(() => {
       setRooms(prevRooms => prevRooms.map(room => {
@@ -57,9 +57,8 @@ function App() {
         const isOccupied = room.bookedSlots.some(s => s.startTime <= now && s.endTime > now);
 
         if (isOccupied) {
-          // Fluctuate viewers randomly between -3 and +5
-          const change = Math.floor(Math.random() * 9) - 3;
-          // Clamp between 0 and 100 (Max capacity)
+          // Fluctuate viewers randomly
+          const change = Math.floor(Math.random() * 7) - 2;
           return { 
             ...room, 
             isLive: true,
@@ -70,7 +69,7 @@ function App() {
            return { ...room, isLive: false, viewers: 0 };
         }
       }));
-    }, 4000);
+    }, 10000); // 10 Seconds (Increased from 4s)
 
     return () => clearInterval(interval);
   }, []);
@@ -101,6 +100,14 @@ function App() {
     setUser(updatedUser);
     localStorage.setItem('peachy_session', JSON.stringify(updatedUser));
     
+    // Also update the persistent user store in LocalStorage so it saves across reloads
+    const storedUsersStr = localStorage.getItem('peachy_users');
+    if (storedUsersStr) {
+        const users: User[] = JSON.parse(storedUsersStr);
+        const newUsers = users.map(u => u.id === updatedUser.id ? updatedUser : u);
+        localStorage.setItem('peachy_users', JSON.stringify(newUsers));
+    }
+
     // 2. Sync with Server Background
     try {
         await fetch('/api/user/update', {
@@ -109,8 +116,7 @@ function App() {
             body: JSON.stringify(updatedUser)
         });
     } catch (err) {
-        console.error("Failed to sync user state to server", err);
-        // Silent fail for UX, but data might be out of sync if they reload
+        // Silent fail (Simulation mode)
     }
   };
 

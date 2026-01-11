@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { User, UserRole } from '../types';
-import { KeyRound, ArrowLeft, CheckCircle, Loader2 } from 'lucide-react';
+import { KeyRound, ArrowLeft, CheckCircle, Loader2, ServerOff } from 'lucide-react';
 import { SEO } from '../components/SEO';
 
 interface LoginProps {
@@ -29,10 +29,10 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
           body: JSON.stringify({ email, password })
       });
 
-      // Handle non-JSON responses (e.g. 404 HTML from Vite fallback)
+      // Check for HTML response (Vite Fallback) which means API 404
       const contentType = response.headers.get("content-type");
       if (!contentType || !contentType.includes("application/json")) {
-         throw new Error("Server offline (Simulation Mode)");
+         throw new Error("Could not connect to backend server. Please ensure 'node server.cjs' is running.");
       }
 
       const data = await response.json();
@@ -44,73 +44,16 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
       onLogin(data);
       navigate('/profile');
     } catch (err: any) {
-      console.warn("API Login Failed, falling back to simulation:", err);
-      
-      // FALLBACK SIMULATION FOR DEMO / DEV
-      setTimeout(() => {
-          // Check if user exists in local storage mock, else allow admin override
-          const storedUsersStr = localStorage.getItem('peachy_users');
-          let foundUser: User | undefined;
-          
-          if (storedUsersStr) {
-              const users: User[] = JSON.parse(storedUsersStr);
-              foundUser = users.find(u => u.email.toLowerCase() === email.toLowerCase());
-          }
-
-          if (email === 'admin@peachy.market' || email === 'thepeachymarkets@gmail.com') {
-               // Admin Bypass
-               const adminUser: User = foundUser || {
-                   id: 'admin-1',
-                   username: 'Owner',
-                   email: email,
-                   realName: 'Site Owner',
-                   role: UserRole.OWNER,
-                   balance: 1000,
-                   tokens: 5000,
-                   isVerified: true,
-                   avatarUrl: 'https://i.imgur.com/odttYiB.png',
-                   isBanned: false,
-                   isSuspended: false
-               };
-               onLogin(adminUser);
-               navigate('/profile');
-          } else if (foundUser) {
-              // Found locally stored user
-              if (!foundUser.isBanned) {
-                onLogin(foundUser);
-                navigate('/profile');
-              } else {
-                setError("This account has been banned.");
-                setIsLoading(false);
-              }
-          } else {
-              // Simulate generic user if email valid format
-              if (email.includes('@')) {
-                  const mockUser: User = {
-                    id: `user-${Date.now()}`,
-                    username: email.split('@')[0],
-                    email: email,
-                    realName: 'Demo User',
-                    role: UserRole.VERIFIED, // Default to Verified for demo ease
-                    balance: 0,
-                    tokens: 100,
-                    isVerified: true,
-                    avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`
-                  };
-                  onLogin(mockUser);
-                  navigate('/profile');
-              } else {
-                  setError("Invalid credentials.");
-                  setIsLoading(false);
-              }
-          }
-      }, 1000);
+      console.error("Login Error:", err);
+      setError(err.message || "Connection failed. Please check your network.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
   if (view === 'forgot') {
       return (
-        <div className="max-w-md mx-auto mt-16 p-8 bg-white rounded-2xl shadow-xl border border-peach-100">
+        <div className="max-w-md mx-auto mt-16 p-8 bg-white rounded-2xl shadow-xl border border-peach-100 animate-fadeIn">
             <SEO title="Reset Password" />
             <button onClick={() => { setView('login'); }} className="flex items-center text-sm text-gray-500 hover:text-peach-600 mb-6 font-bold">
                 <ArrowLeft className="w-4 h-4 mr-1" /> Back to Login
@@ -123,7 +66,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                 <p className="text-slate-500 text-sm mt-2">Enter your email to verify account ownership.</p>
             </div>
             
-            <form onSubmit={(e) => { e.preventDefault(); alert("Reset link sent (simulation)."); setView('login'); }} className="space-y-6">
+            <form onSubmit={(e) => { e.preventDefault(); alert("Feature coming soon."); setView('login'); }} className="space-y-6">
                 <div>
                     <label className="block text-sm font-bold text-slate-700 mb-2">Email Address</label>
                     <input type="email" required className="w-full p-3 border border-gray-300 rounded-lg" placeholder="you@example.com" />
@@ -135,7 +78,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
   }
 
   return (
-    <div className="max-w-md mx-auto mt-16 p-8 bg-white rounded-2xl shadow-xl border border-peach-100">
+    <div className="max-w-md mx-auto mt-16 p-8 bg-white rounded-2xl shadow-xl border border-peach-100 animate-fadeIn">
       <SEO title="Login" description="Sign in to your Peachy Marketplace account." />
       <div className="text-center mb-8">
         <h1 className="text-3xl font-bold text-slate-800">Welcome Back</h1>
@@ -143,8 +86,9 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
       </div>
 
       {error && (
-        <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg text-sm text-center font-medium border border-red-200">
-          {error}
+        <div className="mb-4 p-4 bg-red-50 text-red-700 rounded-lg text-sm flex items-start border border-red-200">
+          <ServerOff className="w-5 h-5 mr-2 shrink-0 mt-0.5" />
+          <span className="font-medium">{error}</span>
         </div>
       )}
 
