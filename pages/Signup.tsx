@@ -185,6 +185,8 @@ export const Signup: React.FC<SignupProps> = ({ onLogin }) => {
               onChange={handleChange}
               className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-peach-400 outline-none text-gray-900"
               placeholder="you@example.com"
+              autoCapitalize="none"
+              autoCorrect="off"
             />
           </div>
           <div>
@@ -197,6 +199,8 @@ export const Signup: React.FC<SignupProps> = ({ onLogin }) => {
               onChange={handleChange}
               className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-peach-400 outline-none text-gray-900"
               placeholder="NoSpacesAllowed"
+              autoCapitalize="none"
+              autoCorrect="off"
             />
             <p className="text-xs text-red-500 font-bold mt-1">NO SPACES ALLOWED (Except Owner)</p>
           </div>
@@ -212,6 +216,7 @@ export const Signup: React.FC<SignupProps> = ({ onLogin }) => {
             onChange={handleChange}
             className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-peach-400 outline-none text-gray-900"
             placeholder="First Last"
+            autoCapitalize="words"
           />
           <p className="text-xs text-gray-400 mt-1">Private. For ID verification and billing only.</p>
         </div>
@@ -227,6 +232,8 @@ export const Signup: React.FC<SignupProps> = ({ onLogin }) => {
               onChange={handleChange}
               className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-peach-400 outline-none text-gray-900"
               placeholder="••••••••"
+              autoCapitalize="none"
+              autoCorrect="off"
             />
           </div>
           <div>
@@ -239,6 +246,8 @@ export const Signup: React.FC<SignupProps> = ({ onLogin }) => {
               onChange={handleChange}
               className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-peach-400 outline-none text-gray-900"
               placeholder="••••••••"
+              autoCapitalize="none"
+              autoCorrect="off"
             />
           </div>
         </div>
@@ -252,6 +261,8 @@ export const Signup: React.FC<SignupProps> = ({ onLogin }) => {
               onChange={handleChange}
               className="w-full p-3 border border-peach-200 bg-white rounded-lg focus:ring-2 focus:ring-peach-400 outline-none text-gray-900"
               placeholder="Partner Code"
+              autoCapitalize="none"
+              autoCorrect="off"
             />
             <p className="text-xs text-peach-600 mt-2">
                 Use a valid partner code to get <span className="font-bold">1 Month Free VIP Status</span> instantly!

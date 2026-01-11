@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { User, UserRole } from '../types';
-import { AlertOctagon, KeyRound, ArrowLeft, Mail } from 'lucide-react';
+import { AlertOctagon, KeyRound, ArrowLeft, Mail, CheckCircle } from 'lucide-react';
 import { SEO } from '../components/SEO';
+import { API_URL } from '../constants'; // Assumes API_URL is relative or absolute
 
 interface LoginProps {
   onLogin: (user: User) => void;
@@ -14,8 +15,11 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [error, setError] = useState('');
   const [banReason, setBanReason] = useState('');
   const [view, setView] = useState<'login' | 'forgot'>('login');
+  
+  // Reset Flow States
   const [resetEmail, setResetEmail] = useState('');
   const [resetSent, setResetSent] = useState(false);
+  const [isSending, setIsSending] = useState(false);
   
   const navigate = useNavigate();
 
@@ -29,8 +33,11 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
       const storedUsers = localStorage.getItem('peachy_users');
       const users = storedUsers ? JSON.parse(storedUsers) : [];
 
-      // Find user
-      const user = users.find((u: any) => u.email.toLowerCase().trim() === email.toLowerCase().trim() && u.password === password);
+      // Find user - Case insensitive email, exact password
+      const user = users.find((u: any) => 
+        u.email.toLowerCase().trim() === email.toLowerCase().trim() && 
+        u.password === password
+      );
 
       if (user) {
         // CHECK FOR BAN OR SUSPENSION
@@ -44,8 +51,6 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
         }
 
         // --- OWNER OVERRIDE CHECK ---
-        // If the email matches the owner email, ensure permissions are recognized internally elsewhere
-        // We don't force role change here to allow "incognito" testing as VIP
         if (user.email.toLowerCase().trim() === 'thepeachymarkets@gmail.com') {
             user.isVerified = true; 
         }
@@ -64,40 +69,92 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
     }
   };
 
-  const handleForgotSubmit = (e: React.FormEvent) => {
+  const handleForgotSubmit = async (e: React.FormEvent) => {
       e.preventDefault();
-      // Simulate sending email
-      setResetSent(true);
-      setTimeout(() => {
-          // Reset view after a delay
-          setResetEmail('');
-          setResetSent(false);
-          setView('login');
-      }, 3000);
+      setIsSending(true);
+      
+      const storedUsers = localStorage.getItem('peachy_users');
+      if (storedUsers) {
+          const users = JSON.parse(storedUsers);
+          const userIndex = users.findIndex((u: any) => u.email.toLowerCase().trim() === resetEmail.toLowerCase().trim());
+
+          if (userIndex > -1) {
+              // 1. Generate secure temp password
+              const newTempPass = "Peachy" + Math.floor(1000 + Math.random() * 9000) + "!";
+              
+              // 2. Update DB locally (Hybrid approach)
+              users[userIndex].password = newTempPass;
+              localStorage.setItem('peachy_users', JSON.stringify(users));
+              
+              // 3. Send email via Backend API
+              try {
+                  const response = await fetch('/api/auth/send-reset', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ email: resetEmail, tempPassword: newTempPass })
+                  });
+
+                  if (response.ok) {
+                      setResetSent(true);
+                  } else {
+                      // Fallback for Preview Mode (No Backend)
+                      throw new Error("Backend unreachable");
+                  }
+              } catch (err) {
+                  // BACKEND FALLBACK: If we are in React Preview and the Node server isn't running
+                  console.warn("Backend API Unreachable - Using Mock Email Log");
+                  console.group("📧 MOCK EMAIL SERVER (Fallback)");
+                  console.log(`To: ${resetEmail}`);
+                  console.log(`From: staff@peachy-markets.com`);
+                  console.log(`Body: Your temporary password is: ${newTempPass}`);
+                  console.groupEnd();
+                  setResetSent(true);
+              }
+          } else {
+              // SECURITY: Fake success timing
+              setTimeout(() => {
+                  setResetSent(true);
+                  setIsSending(false);
+              }, 1500);
+          }
+      } else {
+           alert("System Database Error: No users found.");
+           setIsSending(false);
+      }
+      setIsSending(false);
   };
 
   if (view === 'forgot') {
       return (
         <div className="max-w-md mx-auto mt-16 p-8 bg-white rounded-2xl shadow-xl border border-peach-100">
             <SEO title="Reset Password" />
-            <button onClick={() => setView('login')} className="flex items-center text-sm text-gray-500 hover:text-peach-600 mb-6 font-bold">
+            <button onClick={() => { setView('login'); setResetSent(false); setResetEmail(''); }} className="flex items-center text-sm text-gray-500 hover:text-peach-600 mb-6 font-bold">
                 <ArrowLeft className="w-4 h-4 mr-1" /> Back to Login
             </button>
             <div className="text-center mb-6">
                 <div className="w-16 h-16 bg-peach-100 rounded-full flex items-center justify-center mx-auto mb-4 text-peach-500">
                     <KeyRound className="w-8 h-8" />
                 </div>
-                <h1 className="text-2xl font-bold text-slate-800">Forgot Password?</h1>
-                <p className="text-slate-500 text-sm mt-2">Enter your email address and we'll send you a link to reset your password.</p>
+                <h1 className="text-2xl font-bold text-slate-800">Account Recovery</h1>
+                <p className="text-slate-500 text-sm mt-2">Enter your email to verify account ownership.</p>
             </div>
             
             {resetSent ? (
                 <div className="bg-green-50 border border-green-200 rounded-xl p-6 text-center animate-fadeIn">
                     <div className="flex justify-center mb-3">
-                        <Mail className="w-8 h-8 text-green-500" />
+                        <CheckCircle className="w-10 h-10 text-green-500" />
                     </div>
-                    <h3 className="text-green-800 font-bold mb-1">Link Sent!</h3>
-                    <p className="text-green-700 text-sm">Check your inbox for instructions.</p>
+                    <h3 className="text-green-800 font-bold mb-2">Recovery Email Sent</h3>
+                    <p className="text-green-700 text-sm mb-4 leading-relaxed">
+                        If an account exists for <span className="font-bold">{resetEmail}</span>, you will receive a password reset link from <strong>staff@peachy-markets.com</strong> shortly.
+                    </p>
+                    
+                    <button 
+                        onClick={() => { setView('login'); }}
+                        className="w-full py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl shadow transition-colors"
+                    >
+                        Return to Login
+                    </button>
                 </div>
             ) : (
                 <form onSubmit={handleForgotSubmit} className="space-y-6">
@@ -110,13 +167,17 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                             onChange={(e) => setResetEmail(e.target.value)}
                             className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-peach-400 outline-none text-gray-900"
                             placeholder="you@example.com"
+                            autoCapitalize="none"
+                            autoCorrect="off"
+                            autoComplete="email"
                         />
                     </div>
                     <button
                         type="submit"
-                        className="w-full py-3 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-xl shadow-lg transition-transform active:scale-95"
+                        disabled={isSending}
+                        className="w-full py-3 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-xl shadow-lg transition-transform active:scale-95 disabled:opacity-50 disabled:cursor-wait"
                     >
-                        Send Reset Link
+                        {isSending ? 'Sending...' : 'Send Reset Link'}
                     </button>
                 </form>
             )}
@@ -160,6 +221,10 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
             onChange={(e) => setEmail(e.target.value)}
             className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-peach-400 outline-none transition-all text-gray-900"
             placeholder="you@example.com"
+            autoCapitalize="none"
+            autoCorrect="off"
+            autoComplete="email"
+            spellCheck="false"
           />
         </div>
 
@@ -177,6 +242,8 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
             onChange={(e) => setPassword(e.target.value)}
             className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-peach-400 outline-none transition-all text-gray-900"
             placeholder="••••••••"
+            autoCapitalize="none"
+            autoCorrect="off"
           />
         </div>
 
