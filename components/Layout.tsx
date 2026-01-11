@@ -1,7 +1,7 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { User, UserRole } from '../types';
-import { Home, ShoppingBag, Video, Users, ShieldCheck, Mail, Settings, LogOut, Menu, X, MessageCircle, Crown } from 'lucide-react';
+import { Home, ShoppingBag, Video, Users, ShieldCheck, Mail, Settings, LogOut, Menu, X, MessageCircle, Crown, Download } from 'lucide-react';
 import { APP_NAME } from '../constants';
 
 interface LayoutProps {
@@ -12,7 +12,26 @@ interface LayoutProps {
 
 export const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+  const [installPrompt, setInstallPrompt] = React.useState<any>(null);
   const navigate = useNavigate();
+
+  React.useEffect(() => {
+    const handler = (e: any) => {
+      e.preventDefault();
+      setInstallPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!installPrompt) return;
+    installPrompt.prompt();
+    const { outcome } = await installPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setInstallPrompt(null);
+    }
+  };
 
   const toggleMenu = () => setMobileMenuOpen(!mobileMenuOpen);
 
@@ -98,8 +117,8 @@ export const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
             {/* User Menu */}
             <div className="flex items-center space-x-4">
               {user ? (
-                <div className="relative group">
-                  <button className="flex items-center focus:outline-none" onClick={handleProfileClick}>
+                <div className="relative group h-full flex items-center">
+                  <button className="flex items-center focus:outline-none py-2" onClick={handleProfileClick}>
                     <img
                       src={user.avatarUrl}
                       alt="Avatar"
@@ -111,17 +130,24 @@ export const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
                     </div>
                   </button>
                   {/* Dropdown (Hover) */}
-                  <div className="absolute right-0 mt-4 w-56 bg-gray-800 rounded-xl shadow-2xl py-2 hidden group-hover:block border border-gray-700 animate-fadeIn">
-                     <button onClick={handleProfileClick} className="flex items-center w-full text-left px-5 py-3 text-sm text-gray-300 hover:bg-gray-700/50 hover:text-white transition-colors">
-                        <Settings className="w-4 h-4 mr-3" /> Profile
-                     </button>
-                     <button onClick={() => navigate('/memberships')} className="flex items-center w-full text-left px-5 py-3 text-sm text-peach-400 hover:bg-gray-700/50 font-bold transition-colors">
-                        <Crown className="w-4 h-4 mr-3" /> Upgrade to VIP
-                     </button>
-                     <div className="border-t border-gray-700 my-1"></div>
-                     <button onClick={onLogout} className="flex items-center w-full text-left px-5 py-3 text-sm text-red-400 hover:bg-gray-700/50 transition-colors">
-                        <LogOut className="w-4 h-4 mr-3" /> Logout
-                     </button>
+                  <div className="absolute right-0 top-full pt-2 w-56 hidden group-hover:block z-50">
+                    <div className="bg-gray-800 rounded-xl shadow-2xl py-2 border border-gray-700 animate-fadeIn">
+                       <button onClick={handleProfileClick} className="flex items-center w-full text-left px-5 py-3 text-sm text-gray-300 hover:bg-gray-700/50 hover:text-white transition-colors">
+                          <Settings className="w-4 h-4 mr-3" /> Profile
+                       </button>
+                       <button onClick={() => navigate('/memberships')} className="flex items-center w-full text-left px-5 py-3 text-sm text-peach-400 hover:bg-gray-700/50 font-bold transition-colors">
+                          <Crown className="w-4 h-4 mr-3" /> Upgrade to VIP
+                       </button>
+                       {installPrompt && (
+                         <button onClick={handleInstallClick} className="flex items-center w-full text-left px-5 py-3 text-sm text-green-400 hover:bg-gray-700/50 font-bold transition-colors">
+                            <Download className="w-4 h-4 mr-3" /> Install App
+                         </button>
+                       )}
+                       <div className="border-t border-gray-700 my-1"></div>
+                       <button onClick={onLogout} className="flex items-center w-full text-left px-5 py-3 text-sm text-red-400 hover:bg-gray-700/50 transition-colors">
+                          <LogOut className="w-4 h-4 mr-3" /> Logout
+                       </button>
+                    </div>
                   </div>
                 </div>
               ) : (
@@ -180,6 +206,11 @@ export const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
                <button onClick={() => { navigate('/memberships'); setMobileMenuOpen(false); }} className="flex items-center w-full px-4 py-3 text-base font-bold text-peach-500 hover:bg-gray-800 rounded-lg">
                   <Crown className="w-5 h-5 mr-3" /> Upgrade to VIP
                </button>
+               {installPrompt && (
+                 <button onClick={() => { handleInstallClick(); setMobileMenuOpen(false); }} className="flex items-center w-full px-4 py-3 text-base font-bold text-green-500 hover:bg-gray-800 rounded-lg">
+                    <Download className="w-5 h-5 mr-3" /> Install App
+                 </button>
+               )}
                <button onClick={onLogout} className="flex items-center w-full px-4 py-3 text-base font-bold text-red-500 hover:bg-gray-800 rounded-lg">
                   <LogOut className="w-5 h-5 mr-3" /> Logout
                </button>

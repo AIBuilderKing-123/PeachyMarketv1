@@ -234,6 +234,7 @@ export const Memberships: React.FC<MembershipsProps> = ({ user, onUpdateUser }) 
                <PayPalButton 
                  amount={checkoutPlan.price} 
                  description={`Membership: ${checkoutPlan.name}`}
+                 customId={user?.id}
                  onSuccess={handlePaymentSuccess}
                />
             </div>

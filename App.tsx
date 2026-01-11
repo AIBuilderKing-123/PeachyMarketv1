@@ -113,7 +113,7 @@ function App() {
           <Route path="/signup" element={!user ? <Signup onLogin={handleLogin} /> : <Navigate to="/profile" />} />
           <Route path="/marketplace" element={<Marketplace user={user} />} />
           <Route path="/cam-rooms" element={<CamRooms user={user} onUpdateUser={handleUserUpdate} rooms={rooms} onUpdateRooms={setRooms} />} />
-          <Route path="/profile" element={user ? <Profile user={user} /> : <Navigate to="/login" />} />
+          <Route path="/profile" element={user ? <Profile user={user} onUpdateUser={handleUserUpdate} /> : <Navigate to="/login" />} />
           <Route path="/verification" element={user ? <Verification /> : <Navigate to="/login" />} />
           
           {/* Community/Messages Route Logic:

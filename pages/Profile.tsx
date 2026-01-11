@@ -1,20 +1,30 @@
 import React, { useState } from 'react';
 import { User, UserRole, Transaction } from '../types';
-import { Camera, Edit, UserPlus, MessageCircle, Flag, ArrowUpRight, ArrowDownLeft, Wallet, Calendar, Clock, DollarSign, Coins, Heart, Users as UsersIcon, Link as LinkIcon, Copy } from 'lucide-react';
+import { Camera, Edit, UserPlus, MessageCircle, Flag, ArrowUpRight, ArrowDownLeft, Wallet, Calendar, Clock, DollarSign, Coins, Heart, Users as UsersIcon, Link as LinkIcon, Copy, X, Save } from 'lucide-react';
 import { SEO } from '../components/SEO';
 
 interface ProfileProps {
   user: User;
+  onUpdateUser: (user: User) => void;
 }
 
-export const Profile: React.FC<ProfileProps> = ({ user }) => {
+export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser }) => {
   const [activeTab, setActiveTab] = useState<'about' | 'wallet'>('about');
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [isEditing, setIsEditing] = useState(false);
   
   // Social Stats State (Reset to 0)
   const [followerCount, setFollowerCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
   const [isFollowing, setIsFollowing] = useState(false);
+
+  // Edit Form State
+  const [editForm, setEditForm] = useState({
+      username: user.username,
+      bio: user.bio || '',
+      birthMonth: user.birthMonth || '',
+      zodiac: user.zodiac || '',
+  });
 
   const handleFollowToggle = () => {
     try {
@@ -58,17 +68,70 @@ export const Profile: React.FC<ProfileProps> = ({ user }) => {
     }
   };
 
+  // --- EDIT PROFILE LOGIC ---
+  const handleEditChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+      setEditForm({ ...editForm, [e.target.name]: e.target.value });
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, field: 'avatarUrl' | 'bannerUrl') => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      const isGif = file.type === 'image/gif';
+      const isOwner = user.role === UserRole.OWNER;
+
+      // ENFORCE FILE TYPE RULES
+      if (isGif && !isOwner) {
+          alert("Restricted: Only the Owner can use GIF images. Please upload a JPEG or PNG.");
+          e.target.value = ''; // Reset input
+          return;
+      }
+      
+      if (!['image/jpeg', 'image/png', 'image/gif'].includes(file.type)) {
+          alert("Invalid file type. Please upload JPG or PNG.");
+          return;
+      }
+
+      // Simulate Upload
+      const fakeUrl = URL.createObjectURL(file);
+      onUpdateUser({ ...user, [field]: fakeUrl });
+  };
+
+  const saveProfile = () => {
+      // ENFORCE USERNAME RULES
+      const isOwner = user.role === UserRole.OWNER;
+      if (!isOwner && editForm.username.includes(' ')) {
+          alert("Validation Error: Screen Name cannot contain spaces.");
+          return;
+      }
+
+      onUpdateUser({
+          ...user,
+          username: editForm.username,
+          bio: editForm.bio,
+          birthMonth: editForm.birthMonth,
+          zodiac: editForm.zodiac
+      });
+      setIsEditing(false);
+      alert("Profile updated successfully!");
+  };
+
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-4xl mx-auto relative">
       <SEO 
         title={`${user.username}'s Profile`} 
         description={`Check out ${user.username} on The Peachy Marketplace. View their bio, listings, and connect.`}
         image={user.avatarUrl}
       />
+      
       {/* Banner */}
-      <div className="relative h-64 rounded-b-3xl overflow-hidden shadow-lg bg-gray-200">
+      <div className="relative h-64 rounded-b-3xl overflow-hidden shadow-lg bg-gray-200 group">
         <img src={user.bannerUrl} alt="Banner" className="w-full h-full object-cover" />
-        <button className="absolute top-4 right-4 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full">
+        <button 
+            onClick={() => setIsEditing(true)}
+            className="absolute top-4 right-4 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+            title="Edit Banner"
+        >
           <Camera className="w-5 h-5" />
         </button>
       </div>
@@ -76,33 +139,26 @@ export const Profile: React.FC<ProfileProps> = ({ user }) => {
       {/* Info Section */}
       <div className="relative px-6 pb-6">
         {/* Avatar */}
-        <div className="absolute -top-16 left-8">
-           <div className={`w-32 h-32 rounded-full border-4 border-white overflow-hidden shadow-lg ${user.role === UserRole.DIAMOND_VIP ? 'ring-4 ring-blue-300' : ''}`}>
-             <img src={user.avatarUrl} alt="Avatar" className="w-full h-full object-cover bg-white" />
+        <div className="absolute -top-16 left-8 group">
+           <div className={`w-32 h-32 rounded-full border-4 border-white overflow-hidden shadow-lg ${user.role === UserRole.DIAMOND_VIP ? 'ring-4 ring-blue-300' : ''} bg-white relative`}>
+             <img src={user.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+             <div 
+                className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                onClick={() => setIsEditing(true)}
+             >
+                 <Camera className="w-8 h-8 text-white" />
+             </div>
            </div>
         </div>
 
         {/* Actions Bar (Right aligned) */}
         <div className="flex justify-end pt-4 space-x-3 mb-4">
+           {/* Self-Profile: Edit Button */}
            <button 
-             onClick={handleFollowToggle}
-             className={`flex items-center px-4 py-2 rounded-full font-bold shadow transition-all ${
-               isFollowing 
-                 ? 'bg-slate-200 text-slate-600 hover:bg-slate-300' 
-                 : 'bg-pink-100 text-pink-600 hover:bg-pink-200'
-             }`}
+             onClick={() => setIsEditing(true)}
+             className="flex items-center px-4 py-2 bg-slate-800 text-white rounded-full font-bold shadow hover:bg-slate-700 transition"
            >
-             <Heart className={`w-4 h-4 mr-2 ${isFollowing ? 'fill-current' : ''}`} /> 
-             {isFollowing ? 'Unfollow' : 'Follow'}
-           </button>
-           <button className="flex items-center px-4 py-2 bg-peach-500 text-white rounded-full font-bold shadow hover:bg-peach-600 transition">
-             <UserPlus className="w-4 h-4 mr-2" /> Add Friend
-           </button>
-           <button className="flex items-center px-4 py-2 bg-blue-500 text-white rounded-full font-bold shadow hover:bg-blue-600 transition">
-             <MessageCircle className="w-4 h-4 mr-2" /> Message
-           </button>
-           <button className="p-2 text-gray-400 hover:text-red-500 rounded-full border border-gray-200" title="Report User">
-             <Flag className="w-4 h-4" />
+             <Edit className="w-4 h-4 mr-2" /> Edit Profile
            </button>
         </div>
 
@@ -113,6 +169,7 @@ export const Profile: React.FC<ProfileProps> = ({ user }) => {
                <h1 className="text-3xl font-bold text-slate-800 mr-2">{user.username}</h1>
                {user.isVerified && <span className="text-blue-500 bg-blue-50 px-2 py-0.5 rounded text-xs font-bold border border-blue-100">VERIFIED</span>}
                {user.role === UserRole.VIP && <span className="ml-2 bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded text-xs font-bold border border-yellow-200">VIP</span>}
+               {user.role === UserRole.OWNER && <span className="ml-2 bg-red-100 text-red-700 px-2 py-0.5 rounded text-xs font-bold border border-red-200">OWNER</span>}
              </div>
              
              {/* Follower Counts */}
@@ -265,6 +322,109 @@ export const Profile: React.FC<ProfileProps> = ({ user }) => {
            </div>
         </div>
       </div>
+
+      {/* EDIT PROFILE MODAL */}
+      {isEditing && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fadeIn">
+            <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+                <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                    <h3 className="font-bold text-lg text-slate-800">Customize Profile</h3>
+                    <button onClick={() => setIsEditing(false)} className="text-gray-400 hover:text-gray-600"><X className="w-6 h-6"/></button>
+                </div>
+                
+                <div className="p-6 overflow-y-auto space-y-6">
+                    {/* Images */}
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="p-4 border-2 border-dashed border-gray-300 rounded-xl text-center">
+                            <p className="text-sm font-bold text-slate-700 mb-1">Profile Picture</p>
+                            <p className="text-xs text-gray-400 mb-3">{user.role === UserRole.OWNER ? 'JPG, PNG, GIF' : 'JPG, PNG'}</p>
+                            <input 
+                                type="file" 
+                                accept={user.role === UserRole.OWNER ? "image/jpeg, image/png, image/gif" : "image/jpeg, image/png"}
+                                onChange={(e) => handleFileChange(e, 'avatarUrl')}
+                                className="w-full text-xs" 
+                            />
+                        </div>
+                        <div className="p-4 border-2 border-dashed border-gray-300 rounded-xl text-center">
+                            <p className="text-sm font-bold text-slate-700 mb-1">Banner Image</p>
+                            <p className="text-xs text-gray-400 mb-3">{user.role === UserRole.OWNER ? 'JPG, PNG, GIF' : 'JPG, PNG'}</p>
+                            <input 
+                                type="file" 
+                                accept={user.role === UserRole.OWNER ? "image/jpeg, image/png, image/gif" : "image/jpeg, image/png"}
+                                onChange={(e) => handleFileChange(e, 'bannerUrl')}
+                                className="w-full text-xs" 
+                            />
+                        </div>
+                    </div>
+
+                    {/* Username */}
+                    <div>
+                        <label className="block text-sm font-bold text-slate-700 mb-1">Screen Name</label>
+                        <input 
+                            type="text"
+                            name="username"
+                            value={editForm.username}
+                            onChange={handleEditChange}
+                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-peach-400 outline-none"
+                        />
+                        <p className="text-xs text-gray-400 mt-1">
+                            {user.role === UserRole.OWNER ? 'Owner Privileges: Spaces Allowed' : 'No spaces allowed.'}
+                        </p>
+                    </div>
+
+                    {/* Bio */}
+                    <div>
+                        <label className="block text-sm font-bold text-slate-700 mb-1">Bio (Max 1500)</label>
+                        <textarea 
+                            name="bio"
+                            value={editForm.bio}
+                            onChange={handleEditChange}
+                            maxLength={1500}
+                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-peach-400 outline-none h-32 resize-none"
+                        />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-bold text-slate-700 mb-1">Birth Month</label>
+                            <select 
+                                name="birthMonth"
+                                value={editForm.birthMonth}
+                                onChange={handleEditChange}
+                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-peach-400 outline-none"
+                            >
+                                <option value="">Select...</option>
+                                {['January','February','March','April','May','June','July','August','September','October','November','December'].map(m => (
+                                    <option key={m} value={m}>{m}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-bold text-slate-700 mb-1">Astral Sign</label>
+                            <select 
+                                name="zodiac"
+                                value={editForm.zodiac}
+                                onChange={handleEditChange}
+                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-peach-400 outline-none"
+                            >
+                                <option value="">Select...</option>
+                                {['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'].map(z => (
+                                    <option key={z} value={z}>{z}</option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="p-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-2">
+                    <button onClick={() => setIsEditing(false)} className="px-6 py-3 text-gray-500 font-bold hover:bg-gray-200 rounded-xl transition">Cancel</button>
+                    <button onClick={saveProfile} className="px-6 py-3 bg-peach-500 text-white font-bold rounded-xl hover:bg-peach-600 transition shadow-lg flex items-center">
+                        <Save className="w-4 h-4 mr-2" /> Save Changes
+                    </button>
+                </div>
+            </div>
+        </div>
+      )}
     </div>
   );
 };

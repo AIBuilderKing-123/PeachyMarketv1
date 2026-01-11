@@ -2,17 +2,36 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <meta name="theme-color" content="#111827" />
     <meta name="description" content="The Ultimate Marketplace for Sex Workers. Secure, Verified, and Professional." />
     
+    <!-- PWA / Mobile Capable Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="PeachyMarket">
+    <link rel="apple-touch-icon" href="/logo.png">
+    <link rel="manifest" href="/manifest.webmanifest">
+
+    <!-- DEFAULT SOCIAL PREVIEW TAGS (Static Fallback for Scrapers) -->
+    <meta property="og:site_name" content="The Peachy Marketplace" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="The Peachy Marketplace - Verified 18+ Content" />
+    <meta property="og:description" content="The safest marketplace for verified adult content creators. 7% fees, instant payouts, and live cam rooms." />
+    <meta property="og:image" content="https://peachy.market/logo.png" />
+    <meta property="og:image:width" content="512" />
+    <meta property="og:image:height" content="512" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="https://peachy.market/logo.png" />
+
     <title>The Peachy Marketplace</title>
     <link rel="icon" type="image/png" href="/logo.png" />
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
-    <!-- PAYPAL SDK - REPLACE 'YOUR_PAYPAL_CLIENT_ID' WITH YOUR ACTUAL BUSINESS CLIENT ID -->
-    <script src="https://www.paypal.com/sdk/js?client-id=YOUR_PAYPAL_CLIENT_ID&currency=USD"></script>
+    <!-- PAYPAL SDK -->
+    <!-- Client ID provided by user -->
+    <script src="https://www.paypal.com/sdk/js?client-id=AbkHNTbccKTux5lsE5nCi7BHsKT-Qpbmse2XU5T3J4pUKrLUle6BtwLm0LaIuSygsz0rq2MrTnlGcg-k&currency=USD"></script>
 
     <script>
       tailwind.config = {
@@ -52,6 +71,8 @@
     <style>
       body {
         font-family: 'Quicksand', sans-serif;
+        /* Prevent pull-to-refresh on mobile for app-like feel */
+        overscroll-behavior-y: none;
       }
       /* Custom scrollbar for chat */
       .scrollbar-hide::-webkit-scrollbar {
@@ -91,12 +112,13 @@
     "react-helmet-async": "https://esm.sh/react-helmet-async@2.0.4?external=react,react-dom",
     "hls.js": "https://esm.sh/hls.js@1.5.8",
     "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2",
-    "vite": "https://esm.sh/vite@^7.3.1"
+    "vite": "https://esm.sh/vite@^7.3.1",
+    "vite-plugin-pwa": "https://esm.sh/vite-plugin-pwa@^1.2.0"
   }
 }
 </script>
 </head>
-  <body class="bg-gray-900 text-gray-100 min-h-screen">
+  <body class="bg-gray-900 text-gray-100 min-h-screen select-none md:select-auto">
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
   </body>

@@ -2,6 +2,7 @@ import { User, UserRole, Listing, CamRoom, Transaction } from './types';
 
 export const APP_NAME = "The Peachy Marketplace";
 export const SLOGAN = "The Ultimate Marketplace for Sex Workers";
+export const API_URL = "https://thepeachyhub.com/api";
 
 // BUNNY CDN CONFIGURATION
 // Replace these values with your actual BunnyCDN Stream details when deploying.

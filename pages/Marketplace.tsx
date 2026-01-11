@@ -304,6 +304,7 @@ export const Marketplace: React.FC<MarketplaceProps> = ({ user }) => {
                <PayPalButton 
                  amount={purchaseModalListing.price} 
                  description={`Purchase: ${purchaseModalListing.title}`}
+                 customId={user?.id}
                  onSuccess={handlePurchaseSuccess}
                />
 

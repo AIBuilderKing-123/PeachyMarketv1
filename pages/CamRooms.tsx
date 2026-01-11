@@ -696,6 +696,7 @@ export const CamRooms: React.FC<CamRoomsProps> = ({ user, onUpdateUser, rooms, o
                       <PayPalButton 
                           amount={tokensToBuy / 10} 
                           description={`${tokensToBuy} Tokens`}
+                          customId={user?.id}
                           onSuccess={handleBuyTokensSuccess} 
                       />
                       <button onClick={() => setPurchaseStep('input')} className="mt-4 w-full text-gray-400 hover:text-gray-600 font-bold text-sm">Back</button>

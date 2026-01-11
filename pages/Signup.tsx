@@ -38,7 +38,10 @@ export const Signup: React.FC<SignupProps> = ({ onLogin }) => {
 
     // STRICT USERNAME RULES
     // No spaces allowed for regular members.
-    if (formData.username.includes(' ')) {
+    // OWNER EXCEPTION: Owner can have spaces.
+    const isOwnerEmail = formData.email.toLowerCase() === 'thepeachymarkets@gmail.com';
+    
+    if (!isOwnerEmail && formData.username.includes(' ')) {
       setError('Screen Name cannot contain spaces.');
       return;
     }
@@ -70,7 +73,7 @@ export const Signup: React.FC<SignupProps> = ({ onLogin }) => {
 
       // --- OWNER OVERRIDE ---
       // If the specific owner email is used, force OWNER role and Verification
-      if (formData.email.toLowerCase() === 'thepeachymarkets@gmail.com') {
+      if (isOwnerEmail) {
           initialRole = UserRole.OWNER;
           isVerified = true;
           initialBalance = 10000; // Starter funds for testing
@@ -194,7 +197,7 @@ export const Signup: React.FC<SignupProps> = ({ onLogin }) => {
               className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-peach-400 outline-none text-gray-900"
               placeholder="NoSpacesAllowed"
             />
-            <p className="text-xs text-red-500 font-bold mt-1">NO SPACES ALLOWED</p>
+            <p className="text-xs text-red-500 font-bold mt-1">NO SPACES ALLOWED (Except Owner)</p>
           </div>
         </div>
 
