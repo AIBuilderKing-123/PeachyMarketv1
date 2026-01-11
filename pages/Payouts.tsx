@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { User } from '../types';
+import { FEES } from '../constants';
 import { SEO } from '../components/SEO';
-import { DollarSign, CreditCard, Landmark, AlertTriangle, ArrowLeft } from 'lucide-react';
+import { CreditCard, Landmark, ArrowLeft, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface PayoutsProps {
@@ -32,11 +33,17 @@ export const Payouts: React.FC<PayoutsProps> = ({ user, onUpdateUser }) => {
     if (amount > user.balance) return alert("Error: Insufficient funds.");
     if (amount <= 0) return alert("Error: Invalid amount.");
 
-    // Simulate 3% fee calc for display
-    const fee = amount * 0.03;
-    const net = amount - fee;
+    const processingFee = amount * FEES.ACH_FEE_PERCENT;
+    const netPayout = amount - processingFee;
 
-    if (window.confirm(`Confirm ACH Withdrawal?\n\nAmount: $${amount.toFixed(2)}\nFee (3%): -$${fee.toFixed(2)}\nNet Payout: $${net.toFixed(2)}\n\nThis will be emailed to staff for processing.`)) {
+    if (window.confirm(`Confirm ACH Withdrawal?
+    
+    Withdrawal Amount: $${amount.toFixed(2)}
+    Processing Fee (3%): -$${processingFee.toFixed(2)}
+    
+    Total Direct Deposit: $${netPayout.toFixed(2)}
+    
+    This will be emailed to staff for processing.`)) {
         onUpdateUser({ ...user, balance: user.balance - amount });
         alert(`Request Sent! An email with your 1099 Contractor details has been sent to staff@peachy-markets.com.\n\nFunds will arrive in 3-5 business days.`);
         navigate('/profile');
@@ -51,7 +58,7 @@ export const Payouts: React.FC<PayoutsProps> = ({ user, onUpdateUser }) => {
       if (amount <= 0) return alert("Error: Invalid amount.");
       
       onUpdateUser({ ...user, balance: user.balance - amount });
-      alert(`Success: $${amount.toFixed(2)} sent to ${paypalEmail}.`);
+      alert(`Success: $${amount.toFixed(2)} payout request for ${paypalEmail} submitted.`);
       navigate('/profile');
   };
 
@@ -65,7 +72,8 @@ export const Payouts: React.FC<PayoutsProps> = ({ user, onUpdateUser }) => {
        <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-200">
           <div className="bg-slate-900 p-8 text-center">
              <h1 className="text-3xl font-bold text-white mb-2">Withdraw Funds</h1>
-             <p className="text-slate-400">Current Balance: <span className="text-green-400 font-bold">${user.balance.toFixed(2)}</span></p>
+             <p className="text-slate-400">Available Balance: <span className="text-green-400 font-bold">${user.balance.toFixed(2)}</span></p>
+             <p className="text-xs text-gray-500 mt-2">*Service Fees (4%) were already deducted at time of sale.</p>
           </div>
 
           <div className="p-8">
@@ -79,7 +87,7 @@ export const Payouts: React.FC<PayoutsProps> = ({ user, onUpdateUser }) => {
                             <CreditCard className="w-8 h-8" />
                         </div>
                         <h3 className="text-xl font-bold text-slate-800">PayPal</h3>
-                        <p className="text-sm text-gray-500 mt-2">Instant transfer to your linked account.</p>
+                        <p className="text-sm text-gray-500 mt-2">Instant transfer. No extra processing fee.</p>
                     </button>
 
                     <button 
@@ -90,7 +98,7 @@ export const Payouts: React.FC<PayoutsProps> = ({ user, onUpdateUser }) => {
                             <Landmark className="w-8 h-8" />
                         </div>
                         <h3 className="text-xl font-bold text-slate-800">Direct Deposit (ACH)</h3>
-                        <p className="text-sm text-gray-500 mt-2">For 1099 Contractors. 3% Fee applies.</p>
+                        <p className="text-sm text-gray-500 mt-2">For 1099 Contractors. 3% Processing Fee.</p>
                     </button>
                  </div>
              ) : method === 'paypal' ? (
@@ -116,16 +124,6 @@ export const Payouts: React.FC<PayoutsProps> = ({ user, onUpdateUser }) => {
                         <h2 className="text-2xl font-bold text-slate-800">ACH Direct Deposit</h2>
                     </div>
 
-                    <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4 mb-6 rounded-r-lg">
-                        <div className="flex">
-                            <AlertTriangle className="w-5 h-5 text-yellow-600 mr-2 shrink-0" />
-                            <p className="text-sm text-yellow-800">
-                                <strong>Important:</strong> ACH Deposits are only available for those enrolled as a 1099 Contractor. 
-                                A <strong>3% Processing Fee</strong> will be deducted from the withdrawal amount.
-                            </p>
-                        </div>
-                    </div>
-
                     <form onSubmit={handleACHSubmit} className="space-y-4">
                         <div className="grid grid-cols-2 gap-4">
                             <div>
@@ -145,14 +143,39 @@ export const Payouts: React.FC<PayoutsProps> = ({ user, onUpdateUser }) => {
 
                         <div>
                             <label className="block font-bold text-slate-700 mb-1 text-sm">Withdrawal Amount ($)</label>
-                            <input type="number" step="0.01" max={user.balance} required value={achForm.amount} onChange={e => setAchForm({...achForm, amount: e.target.value})} className="w-full p-3 border border-gray-300 rounded-lg text-slate-900 outline-none focus:border-green-500" />
-                            <p className="text-xs text-gray-500 mt-1">Available: ${user.balance.toFixed(2)}</p>
+                            <input 
+                                type="number" 
+                                step="0.01" 
+                                max={user.balance} 
+                                required 
+                                value={achForm.amount} 
+                                onChange={e => setAchForm({...achForm, amount: e.target.value})} 
+                                className="w-full p-3 border border-gray-300 rounded-lg text-slate-900 outline-none focus:border-green-500" 
+                            />
+                            {achForm.amount && !isNaN(parseFloat(achForm.amount)) && (
+                                <div className="mt-2 p-3 bg-gray-50 rounded-lg text-xs space-y-1 border border-gray-200">
+                                    <div className="flex justify-between text-gray-500">
+                                        <span>Withdrawal Amount:</span>
+                                        <span>${parseFloat(achForm.amount).toFixed(2)}</span>
+                                    </div>
+                                    <div className="flex justify-between text-red-500 font-bold">
+                                        <span>Processing Fee (3%):</span>
+                                        <span>-${(parseFloat(achForm.amount) * FEES.ACH_FEE_PERCENT).toFixed(2)}</span>
+                                    </div>
+                                    <div className="border-t border-gray-200 pt-1 flex justify-between font-bold text-green-600">
+                                        <span>Est. Deposit:</span>
+                                        <span>${(parseFloat(achForm.amount) * (1 - FEES.ACH_FEE_PERCENT)).toFixed(2)}</span>
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
-                        <div className="text-xs text-gray-500 bg-gray-50 p-3 rounded-lg border border-gray-200 mt-4 leading-relaxed">
-                            <strong>Disclaimer:</strong> Direct deposit can take up to 3-5 business days to arrive. 
-                            The Peachy Marketplace is not responsible for funds not arriving if the wrong account or routing number is provided. 
-                            This form will be emailed to <strong>staff@peachy-markets.com</strong> for processing.
+                        <div className="text-xs text-gray-500 bg-gray-50 p-3 rounded-lg border border-gray-200 mt-4 leading-relaxed flex items-start">
+                            <AlertCircle className="w-4 h-4 mr-2 shrink-0 text-slate-400" />
+                            <span>
+                                <strong>Note:</strong> Direct deposit takes 3-5 business days. 
+                                A 3% processing fee is deducted from the withdrawal amount to cover Melio provider charges.
+                            </span>
                         </div>
 
                         <button type="submit" className="w-full py-4 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl shadow-lg mt-2 transition-transform active:scale-[0.99]">

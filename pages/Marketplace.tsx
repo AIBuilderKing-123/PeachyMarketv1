@@ -7,9 +7,10 @@ import { SEO } from '../components/SEO';
 
 interface MarketplaceProps {
   user: User | null;
+  onUpdateUser: (user: User) => void;
 }
 
-export const Marketplace: React.FC<MarketplaceProps> = ({ user }) => {
+export const Marketplace: React.FC<MarketplaceProps> = ({ user, onUpdateUser }) => {
   const [listings, setListings] = useState<Listing[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [purchaseModalListing, setPurchaseModalListing] = useState<Listing | null>(null);
@@ -108,6 +109,7 @@ export const Marketplace: React.FC<MarketplaceProps> = ({ user }) => {
 
       // --- BACKEND SIMULATION ---
       // Distribute Funds: Seller gets (Price - 4%), Owner gets (BuyerFee 4% + SellerFee 4%)
+      // Funds are physically in Owner's PayPal. We credit the Seller's virtual balance.
       try {
         const storedUsers = localStorage.getItem('peachy_users');
         if (storedUsers) {
@@ -126,17 +128,19 @@ export const Marketplace: React.FC<MarketplaceProps> = ({ user }) => {
                 const sellerPayout = basePrice - sellerFee;
                 const totalFeeCollected = sellerFee + buyerFee;
 
-                // Credit Seller
+                // Credit Seller (NET AMOUNT)
+                // This ensures the 4% fee is taken immediately. 
+                // When they withdraw, they get their full balance.
                 users[sellerIndex].balance += sellerPayout;
                 
-                // Credit Owner
+                // Credit Owner (Virtual tracking)
                 if (ownerIndex > -1) {
                     users[ownerIndex].balance += totalFeeCollected;
                 }
                 
                 // Save DB
                 localStorage.setItem('peachy_users', JSON.stringify(users));
-                console.log(`Simulated Transaction: Seller +$${sellerPayout.toFixed(2)}, Owner +$${totalFeeCollected.toFixed(2)}`);
+                console.log(`Transaction Settled: Seller +$${sellerPayout.toFixed(2)}, Owner +$${totalFeeCollected.toFixed(2)} (Held in PayPal)`);
             }
         }
       } catch (err) {
@@ -149,17 +153,35 @@ export const Marketplace: React.FC<MarketplaceProps> = ({ user }) => {
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!user) return;
+
     try {
         if (autoDelivery && !uploadedFileName) {
           alert("Error: Automatic Delivery is enabled but no private content file was uploaded.");
           return;
         }
 
+        // Calculate Sticky Fee
+        let fee = 0;
+        if (isPremiumSticky) fee = FEES.PREMIUM_STICKY_PRICE;
+        else if (isSticky) fee = FEES.STICKY_PRICE;
+
+        // Check Balance
+        if (fee > 0 && user.balance < fee) {
+          alert(`Insufficient Balance! You need $${fee.toFixed(2)} to post this sticky listing. Please sell items or top up.`);
+          return;
+        }
+
+        // Deduct Fee (Money effectively stays with Owner/Platform)
+        if (fee > 0) {
+           onUpdateUser({ ...user, balance: user.balance - fee });
+        }
+
         const newItem: Listing = {
           id: `l${Date.now()}`,
-          sellerId: user?.id || 'u1',
-          sellerName: user?.username || 'PeachyUser',
-          sellerAvatar: user?.avatarUrl || 'https://picsum.photos/200/200?random=1',
+          sellerId: user.id,
+          sellerName: user.username,
+          sellerAvatar: user.avatarUrl,
           title: newTitle,
           description: newDesc,
           price: parseFloat(newPrice),
@@ -173,10 +195,6 @@ export const Marketplace: React.FC<MarketplaceProps> = ({ user }) => {
         };
         setListings([newItem, ...listings]);
         setShowCreateModal(false);
-        
-        let fee = 0;
-        if (isPremiumSticky) fee = FEES.PREMIUM_STICKY_PRICE;
-        else if (isSticky) fee = FEES.STICKY_PRICE;
         
         if (fee > 0) {
           alert(`Listing created successfully! $${fee.toFixed(2)} has been deducted from your balance.`);
@@ -341,11 +359,11 @@ export const Marketplace: React.FC<MarketplaceProps> = ({ user }) => {
       </div>
       )}
 
-      {/* Purchase Modal (PayPal) */}
+      {/* Purchase Modal (PayPal) - UPDATED FOR MOBILE SCROLLING */}
       {purchaseModalListing && (
-         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fadeIn">
-            <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl p-8 border border-gray-200">
-               <div className="flex justify-between items-start mb-6">
+         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fadeIn overflow-y-auto">
+            <div className="bg-white rounded-3xl w-full max-w-md max-h-[90vh] overflow-y-auto shadow-2xl p-8 border border-gray-200 relative my-auto">
+               <div className="flex justify-between items-start mb-6 sticky top-0 bg-white z-10 pb-2 border-b border-gray-100">
                  <div>
                    <h2 className="text-2xl font-bold text-slate-800">Checkout</h2>
                    <p className="text-slate-500 text-sm">{purchaseModalListing.title}</p>
@@ -353,13 +371,15 @@ export const Marketplace: React.FC<MarketplaceProps> = ({ user }) => {
                  <button onClick={() => setPurchaseModalListing(null)} className="text-gray-400 hover:text-gray-600"><X /></button>
                </div>
                
-               <PayPalButton 
-                 key={purchaseModalListing.id} // Added key for stability
-                 amount={purchaseModalListing.price} 
-                 description={`Purchase: ${purchaseModalListing.title}`}
-                 customId={user?.id}
-                 onSuccess={handlePurchaseSuccess}
-               />
+               <div className="py-2">
+                  <PayPalButton 
+                    key={purchaseModalListing.id} 
+                    amount={purchaseModalListing.price} 
+                    description={`Purchase: ${purchaseModalListing.title}`}
+                    customId={user?.id}
+                    onSuccess={handlePurchaseSuccess}
+                  />
+               </div>
 
                <div className="text-center mt-4">
                  <p className="text-xs text-gray-400">Secure Payment via PayPal Business</p>
@@ -370,8 +390,8 @@ export const Marketplace: React.FC<MarketplaceProps> = ({ user }) => {
 
       {/* Create Listing Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-gray-800 border border-gray-700 rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-8 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm animate-fadeIn overflow-y-auto">
+          <div className="bg-gray-800 border border-gray-700 rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-8 shadow-2xl my-auto">
             <h2 className="text-3xl font-bold mb-6 text-gray-100">Create New Listing</h2>
             <form onSubmit={handleCreate} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

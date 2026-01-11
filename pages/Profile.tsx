@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { User, UserRole, Transaction } from '../types';
-import { Camera, Edit, UserPlus, MessageCircle, Flag, ArrowUpRight, ArrowDownLeft, Wallet, Calendar, Clock, DollarSign, Coins, Heart, Users as UsersIcon, Link as LinkIcon, Copy, X, Save, Shield, Lock } from 'lucide-react';
+import { Camera, Edit, UserPlus, MessageCircle, Flag, ArrowUpRight, ArrowDownLeft, Wallet, Calendar, Clock, DollarSign, Coins, Heart, Users as UsersIcon, Link as LinkIcon, Copy, X, Save, Shield, Lock, PlusCircle } from 'lucide-react';
 import { SEO } from '../components/SEO';
 import { useNavigate } from 'react-router-dom';
+import { PayPalButton } from '../components/PayPalButton';
 
 interface ProfileProps {
   user: User;
@@ -14,6 +15,10 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser }) => {
   const [activeTab, setActiveTab] = useState<'about' | 'wallet'>('about');
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isEditing, setIsEditing] = useState(false);
+  
+  // Deposit State
+  const [showDepositModal, setShowDepositModal] = useState(false);
+  const [depositAmount, setDepositAmount] = useState('');
   
   // Social Stats State (Reset to 0)
   const [followerCount, setFollowerCount] = useState(0);
@@ -59,6 +64,32 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser }) => {
       } catch (e) {
           alert("Error: Failed to generate CSV file.");
       }
+  };
+
+  const handleDepositSuccess = (details: any) => {
+    const amount = parseFloat(depositAmount);
+    if (!amount || isNaN(amount)) return;
+    
+    const newBalance = user.balance + amount;
+    
+    // Update User Balance
+    onUpdateUser({ ...user, balance: newBalance });
+    
+    // Add Local Transaction Record
+    const newTx: Transaction = {
+        id: details.id || `dep-${Date.now()}`,
+        type: 'DEPOSIT',
+        amount: amount,
+        date: new Date().toLocaleDateString(),
+        description: 'Wallet Deposit',
+        status: 'COMPLETED'
+    };
+    
+    setTransactions(prev => [newTx, ...prev]);
+    
+    setShowDepositModal(false);
+    setDepositAmount('');
+    alert(`Success! $${amount.toFixed(2)} has been added to your balance.`);
   };
 
   const getTypeColor = (type: Transaction['type']) => {
@@ -135,10 +166,6 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser }) => {
           }
 
           // Validate against database (localStorage/Session)
-          // In a real app, the server would validate this. 
-          // Here we are updating the session user which eventually syncs to server.
-          // Note: Security risk for MVP, but aligns with architecture.
-          
           if (user.password && user.password !== editForm.currentPassword) {
                alert("Error: Incorrect current password.");
                return;
@@ -281,13 +308,21 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser }) => {
                     <div className="text-2xl font-bold flex items-center text-green-400">
                        <DollarSign className="w-5 h-5" /> {user.balance.toFixed(2)}
                     </div>
-                    {/* PAYOUT BUTTON */}
-                    <button 
-                        onClick={() => navigate('/payouts')}
-                        className="mt-3 w-full bg-green-600 hover:bg-green-700 text-white text-xs py-2 rounded-lg font-bold shadow transition-colors flex items-center justify-center"
-                    >
-                        Request Payout
-                    </button>
+                    {/* BUTTONS: DEPOSIT & PAYOUT */}
+                    <div className="grid grid-cols-2 gap-3 mt-4">
+                        <button 
+                            onClick={() => setShowDepositModal(true)}
+                            className="bg-slate-700 hover:bg-slate-600 text-white text-xs py-2.5 rounded-lg font-bold shadow transition-colors flex items-center justify-center border border-slate-600"
+                        >
+                            <PlusCircle className="w-4 h-4 mr-2 text-green-400" /> Deposit
+                        </button>
+                        <button 
+                            onClick={() => navigate('/payouts')}
+                            className="bg-green-600 hover:bg-green-700 text-white text-xs py-2.5 rounded-lg font-bold shadow transition-colors flex items-center justify-center"
+                        >
+                            Request Payout
+                        </button>
+                    </div>
                  </div>
                  <div>
                     <div className="text-gray-400 text-xs">Tokens</div>
@@ -394,6 +429,51 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser }) => {
            </div>
         </div>
       </div>
+
+      {/* DEPOSIT MODAL */}
+      {showDepositModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fadeIn">
+            <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl p-6 relative">
+                <button onClick={() => setShowDepositModal(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+                    <X className="w-6 h-6" />
+                </button>
+                
+                <h2 className="text-xl font-bold text-slate-800 mb-6 flex items-center">
+                    <Wallet className="w-5 h-5 mr-2 text-peach-500" /> Deposit Funds
+                </h2>
+
+                <div className="mb-6">
+                    <label className="block text-sm font-bold text-slate-700 mb-2">Amount to Add ($)</label>
+                    <input 
+                        type="number" 
+                        min="5"
+                        step="1"
+                        value={depositAmount}
+                        onChange={(e) => setDepositAmount(e.target.value)}
+                        className="w-full p-4 border border-gray-300 rounded-xl text-xl font-bold text-slate-800 focus:border-peach-500 outline-none"
+                        placeholder="50.00"
+                    />
+                </div>
+
+                {depositAmount && !isNaN(parseFloat(depositAmount)) && parseFloat(depositAmount) > 0 ? (
+                    <PayPalButton 
+                        amount={parseFloat(depositAmount)}
+                        description={`Wallet Deposit: $${depositAmount}`}
+                        customId={user.id}
+                        onSuccess={handleDepositSuccess}
+                    />
+                ) : (
+                    <div className="p-4 bg-gray-50 rounded-xl text-center text-gray-400 text-sm mb-4">
+                        Enter an amount to proceed.
+                    </div>
+                )}
+                
+                <p className="text-center text-[10px] text-gray-400 mt-4">
+                    Funds are added instantly to your balance. <br/>A 4% service fee applies to cover processor costs.
+                </p>
+            </div>
+        </div>
+      )}
 
       {/* EDIT PROFILE MODAL */}
       {isEditing && (

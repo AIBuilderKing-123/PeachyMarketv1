@@ -237,11 +237,11 @@ export const Memberships: React.FC<MembershipsProps> = ({ user, onUpdateUser }) 
           </div>
       )}
 
-      {/* Checkout Modal */}
+      {/* Checkout Modal - UPDATED FOR MOBILE SCROLLING */}
       {checkoutPlan && (
-         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fadeIn">
-            <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl p-8 border border-gray-200">
-               <div className="flex justify-between items-start mb-6">
+         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fadeIn overflow-y-auto">
+            <div className="bg-white rounded-3xl w-full max-w-md max-h-[90vh] overflow-y-auto shadow-2xl p-8 border border-gray-200 relative my-auto">
+               <div className="flex justify-between items-start mb-6 sticky top-0 bg-white z-10 pb-2 border-b border-gray-100">
                  <div>
                    <h2 className="text-2xl font-bold text-slate-800">Complete Upgrade</h2>
                    <p className="text-slate-500 text-sm">{checkoutPlan.name}</p>

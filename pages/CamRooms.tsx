@@ -547,9 +547,9 @@ export const CamRooms: React.FC<CamRoomsProps> = ({ user, onUpdateUser, rooms, o
 
       {/* Booking Modal */}
       {showBookingModal && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-fadeIn">
-           <div className="bg-gray-800 rounded-3xl w-full max-w-4xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh] border border-gray-700">
-              <div className="bg-peach-600 p-6 text-white flex justify-between items-center shrink-0">
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-fadeIn overflow-y-auto">
+           <div className="bg-gray-800 rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl flex flex-col border border-gray-700 my-auto">
+              <div className="bg-peach-600 p-6 text-white flex justify-between items-center shrink-0 sticky top-0 z-10">
                  <div>
                     <h2 className="text-xl md:text-2xl font-bold flex items-center"><Calendar className="mr-3 w-5 h-5 md:w-6 md:h-6" /> Book Room #{bookingRoomId}</h2>
                     <p className="text-peach-100 text-xs md:text-sm mt-1">Select 2-hour blocks. Rate: ${getSlotPrice().toFixed(2)}/block.</p>
@@ -633,11 +633,11 @@ export const CamRooms: React.FC<CamRoomsProps> = ({ user, onUpdateUser, rooms, o
         </div>
       )}
 
-      {/* Buy Tokens Modal */}
+      {/* Buy Tokens Modal - UPDATED FOR MOBILE SCROLLING */}
       {showBuyTokens && (
-          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fadeIn">
-             <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl p-8 border border-gray-200">
-                 <h2 className="text-2xl font-bold mb-6 text-slate-800 text-center">Buy Tokens</h2>
+          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fadeIn overflow-y-auto">
+             <div className="bg-white rounded-3xl w-full max-w-md max-h-[90vh] overflow-y-auto shadow-2xl p-8 border border-gray-200 relative my-auto">
+                 <h2 className="text-2xl font-bold mb-6 text-slate-800 text-center sticky top-0 bg-white z-10 pb-2">Buy Tokens</h2>
                  {purchaseStep === 'input' ? (
                    <>
                     <div className="mb-6">

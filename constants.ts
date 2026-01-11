@@ -18,6 +18,7 @@ export const FEES = {
   SERVICE_FEE_PERCENT: 0.07, // 7% Service Fee (Legacy/Aggregate)
   BUYER_FEE_PERCENT: 0.04, // 4% Buyer Fee added to transaction
   SELLER_FEE_PERCENT: 0.04, // 4% Seller Fee deducted from earnings
+  ACH_FEE_PERCENT: 0.03, // 3% Processing Fee for Direct Deposit
   TOKEN_SPLIT_SELLER: 0.85, // 85%
   TOKEN_SPLIT_OWNER: 0.15, // 15%
   VIP_TOKEN_SPLIT_SELLER: 0.90, // 90%

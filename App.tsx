@@ -128,15 +128,14 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/login" element={!user ? <Login onLogin={handleLogin} /> : <Navigate to="/profile" />} />
           <Route path="/signup" element={!user ? <Signup onLogin={handleLogin} /> : <Navigate to="/profile" />} />
-          <Route path="/marketplace" element={<Marketplace user={user} />} />
+          
+          {/* Passed handleUserUpdate here */}
+          <Route path="/marketplace" element={<Marketplace user={user} onUpdateUser={handleUserUpdate} />} />
+          
           <Route path="/cam-rooms" element={<CamRooms user={user} onUpdateUser={handleUserUpdate} rooms={rooms} onUpdateRooms={setRooms} />} />
           <Route path="/profile" element={user ? <Profile user={user} onUpdateUser={handleUserUpdate} /> : <Navigate to="/login" />} />
           <Route path="/verification" element={user ? <Verification /> : <Navigate to="/login" />} />
           
-          {/* Community/Messages Route Logic:
-              1. Must be Logged In (user exists) -> else Login
-              2. Must be Verified (user.isVerified) -> else Verification Page
-          */}
           <Route 
             path="/messages" 
             element={
