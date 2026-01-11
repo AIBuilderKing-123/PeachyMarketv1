@@ -50,20 +50,7 @@ export const Messages: React.FC<MessagesProps> = ({ user }) => {
     }
   };
 
-  // Mobile View Logic:
-  // If activeDm is selected, show Chat Area (hide Sidebar).
-  // If no activeDm (or global tab), check screen size.
-  // Note: Global chat treats 'activeDm' as null but 'activeTab' as 'global'.
-  
   const showSidebar = !activeDm && activeTab === 'dm' || (window.innerWidth < 768 && !activeDm && activeTab === 'global') ? true : false;
-  
-  // Actually, simpler logic:
-  // Mobile: Show List IF (Tab is DM AND No Active DM) OR (Tab is Global - wait global is a chatroom).
-  // Let's refine:
-  // 1. Sidebar is always visible on Desktop.
-  // 2. On Mobile, Sidebar is visible ONLY if we are NOT inside a specific chat.
-  
-  // We need a way to "Go Back" on mobile.
 
   return (
     <div className="h-[calc(100vh-140px)] bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-200 flex flex-col md:flex-row">
