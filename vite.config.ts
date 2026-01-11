@@ -16,6 +16,6 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    emptyOutDir: true
+    emptyOutDir: false // Disabled to prevent EACCES errors on Plesk
   }
 });
