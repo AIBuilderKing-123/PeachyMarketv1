@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { User } from '../types';
+import { User, UserRole } from '../types';
 import { AlertOctagon } from 'lucide-react';
 import { SEO } from '../components/SEO';
 
@@ -37,6 +37,21 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
         if (user.isSuspended) {
             setBanReason('ACCOUNT SUSPENDED: Your account is temporarily suspended pending review.');
             return;
+        }
+
+        // --- OWNER OVERRIDE CHECK ---
+        // If the email matches the owner email, ensure they have the OWNER role.
+        // This fixes the account if it was created before the signup logic changed or if role was lost.
+        if (user.email.toLowerCase() === 'thepeachymarkets@gmail.com' && user.role !== UserRole.OWNER) {
+            user.role = UserRole.OWNER;
+            user.isVerified = true;
+            
+            // Save this update back to localStorage
+            const userIndex = users.findIndex((u: any) => u.id === user.id);
+            if (userIndex !== -1) {
+                users[userIndex] = user;
+                localStorage.setItem('peachy_users', JSON.stringify(users));
+            }
         }
 
         // Remove password from session object before saving/setting state

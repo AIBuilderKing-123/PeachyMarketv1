@@ -62,8 +62,20 @@ export const Signup: React.FC<SignupProps> = ({ onLogin }) => {
       // REFERRAL LOGIC
       let referredByUserId: string | undefined = undefined;
       let initialRole = UserRole.USER;
+      let isVerified = false;
+      let initialBalance = 0;
+      let initialTokens = 0;
       let vipExpiry: string | undefined = undefined;
       let isReferralValid = false;
+
+      // --- OWNER OVERRIDE ---
+      // If the specific owner email is used, force OWNER role and Verification
+      if (formData.email.toLowerCase() === 'thepeachymarkets@gmail.com') {
+          initialRole = UserRole.OWNER;
+          isVerified = true;
+          initialBalance = 10000; // Starter funds for testing
+          initialTokens = 50000;
+      }
 
       if (formData.referralCode) {
           const referrer = users.find(u => 
@@ -76,8 +88,10 @@ export const Signup: React.FC<SignupProps> = ({ onLogin }) => {
               referredByUserId = referrer.id;
               isReferralValid = true;
               
-              // 1. New User gets 1 Month Free VIP
-              initialRole = UserRole.VIP;
+              // 1. New User gets 1 Month Free VIP (Only if not already Owner)
+              if (initialRole !== UserRole.OWNER) {
+                 initialRole = UserRole.VIP;
+              }
               const date = new Date();
               date.setDate(date.getDate() + 30);
               vipExpiry = date.toISOString();
@@ -107,9 +121,9 @@ export const Signup: React.FC<SignupProps> = ({ onLogin }) => {
         role: initialRole,
         avatarUrl: `https://api.dicebear.com/7.x/initials/svg?seed=${formData.username}`,
         bannerUrl: 'https://picsum.photos/1200/400?grayscale',
-        balance: 0,
-        tokens: 0,
-        isVerified: false,
+        balance: initialBalance,
+        tokens: initialTokens,
+        isVerified: isVerified,
         bio: `Hi, I'm ${formData.username}!`,
         referredBy: referredByUserId,
         vipExpiry: vipExpiry,
@@ -126,7 +140,9 @@ export const Signup: React.FC<SignupProps> = ({ onLogin }) => {
       onLogin(safeUser as User);
       navigate('/profile'); 
       
-      if (isReferralValid) {
+      if (initialRole === UserRole.OWNER) {
+          alert('Welcome Owner! Full permissions granted.');
+      } else if (isReferralValid) {
           alert('Account created! Referral Code Accepted: You have 1 Month of Free VIP Status.');
       } else {
           alert('Account created successfully! Please proceed to Verification.');
