@@ -237,8 +237,7 @@ export const CamRooms: React.FC<CamRoomsProps> = ({ user, onUpdateUser, rooms, o
       // Deduct Balance
       onUpdateUser({ ...user, balance: user.balance - totalBookingCost });
 
-      // Generate Unique Code (This acts as the Stream Key for BunnyCDN)
-      // Format: {roomId}-{userId}-{timestamp} to ensure uniqueness
+      // Generate Unique Code
       const uniqueCode = `room${bookingRoomId}-${user.id}-${Date.now().toString(36)}`;
       setGeneratedCode(uniqueCode);
 
@@ -318,7 +317,6 @@ export const CamRooms: React.FC<CamRoomsProps> = ({ user, onUpdateUser, rooms, o
     return slot ? slot.userId : null;
   };
 
-  // Added missing helper function
   const isUserScheduledNow = (room: CamRoom) => {
     const hostId = getCurrentHostId(room);
     return !!user && hostId === user.id;
@@ -329,23 +327,21 @@ export const CamRooms: React.FC<CamRoomsProps> = ({ user, onUpdateUser, rooms, o
     const isHost = user?.id === currentHostId;
     const isRoomLive = activeRoom.isLive;
     
-    // Playback URL constructed from CDN config
-    const playbackUrl = `${BUNNY_CDN_CONFIG.PULL_ZONE_URL}/room${activeRoom.id}/playlist.m3u8`;
-
+    // Use dynamic viewport height for mobile
     return (
-      <div className="fixed inset-0 z-50 bg-black flex flex-col md:flex-row">
-        {/* Main Stream Area */}
-        <div className="flex-grow relative bg-gray-900 flex items-center justify-center overflow-hidden">
+      <div className="fixed inset-0 z-50 bg-black flex flex-col md:flex-row h-[100dvh]">
+        {/* Main Stream Area - Top on Mobile, Left on Desktop */}
+        <div className="w-full md:flex-grow h-[45%] md:h-full relative bg-gray-900 flex items-center justify-center overflow-hidden shrink-0">
           <div className="absolute top-4 left-4 z-10 flex space-x-4">
-             <button onClick={() => setActiveRoom(null)} className="bg-black/50 text-white p-3 rounded-full hover:bg-white/20 transition backdrop-blur-sm">
-                <X className="w-6 h-6" />
+             <button onClick={() => setActiveRoom(null)} className="bg-black/50 text-white p-2 rounded-full hover:bg-white/20 transition backdrop-blur-sm">
+                <X className="w-5 h-5" />
              </button>
              {isRoomLive ? (
-               <div className="bg-red-600 text-white px-4 py-2 rounded-lg font-bold uppercase text-sm animate-pulse flex items-center shadow-lg">
-                 <div className="w-3 h-3 bg-white rounded-full mr-3" /> LIVE
+               <div className="bg-red-600 text-white px-3 py-1 rounded-lg font-bold uppercase text-xs animate-pulse flex items-center shadow-lg">
+                 <div className="w-2 h-2 bg-white rounded-full mr-2" /> LIVE
                </div>
              ) : (
-               <div className="bg-gray-700/80 backdrop-blur-sm text-white px-4 py-2 rounded-lg font-bold uppercase text-sm flex items-center shadow-lg">
+               <div className="bg-gray-700/80 backdrop-blur-sm text-white px-3 py-1 rounded-lg font-bold uppercase text-xs flex items-center shadow-lg">
                  OFFLINE
                </div>
              )}
@@ -365,111 +361,74 @@ export const CamRooms: React.FC<CamRoomsProps> = ({ user, onUpdateUser, rooms, o
                >
                  Your browser does not support the video tag.
                </video>
-               
-               {/* HLS Status Indicator (Hidden usually, visible for debug) */}
-               <div className="absolute bottom-4 left-4 text-[10px] text-gray-500 opacity-50 pointer-events-none">
-                  Adaptive Bitrate: Auto (1080p/720p)
-               </div>
              </div>
           ) : (
             /* Placeholder / Offline State */
             <div className="text-center text-gray-600 p-8">
-              <div className="w-48 h-48 mx-auto mb-6 rounded-full bg-gray-800 flex items-center justify-center animate-pulse border-4 border-gray-700">
-                  <Signal className="w-24 h-24 text-gray-500" />
+              <div className="w-24 h-24 mx-auto mb-4 rounded-full bg-gray-800 flex items-center justify-center animate-pulse border-4 border-gray-700">
+                  <Signal className="w-12 h-12 text-gray-500" />
               </div>
-              <h3 className="text-3xl font-bold text-gray-400 mb-2">Waiting for Stream...</h3>
-              <p className="text-gray-500 max-w-md mx-auto">
-                The host is currently offline or setting up. <br/>
-                {BUNNY_CDN_CONFIG.ENABLED && "Video player will initialize automatically when signal is received."}
+              <h3 className="text-xl font-bold text-gray-400 mb-1">Waiting for Stream...</h3>
+              <p className="text-gray-500 text-sm max-w-xs mx-auto">
+                Host offline or connecting.
               </p>
-              {currentHostId && <p className="text-lg text-peach-500 mt-6 font-bold bg-peach-900/10 px-4 py-2 rounded-full inline-block border border-peach-500/20">Host: {getCurrentHostName(activeRoom)}</p>}
+              {currentHostId && <p className="text-sm text-peach-500 mt-4 font-bold bg-peach-900/10 px-3 py-1 rounded-full inline-block border border-peach-500/20">Host: {getCurrentHostName(activeRoom)}</p>}
             </div>
           )}
         </div>
 
-        {/* Sidebar - ZOOMED OUT (Wider / Larger) UI */}
-        <div className="w-full md:w-96 bg-gray-800 flex flex-col h-[50vh] md:h-full border-l border-gray-700 shadow-2xl relative z-20">
+        {/* Sidebar/Bottom Bar - Chat & Interaction */}
+        <div className="w-full md:w-96 bg-gray-800 flex flex-col h-[55%] md:h-full border-t md:border-t-0 md:border-l border-gray-700 shadow-2xl relative z-20">
            {/* Room Header */}
-           <div className="p-4 border-b border-gray-700 bg-gray-900 shrink-0">
-             <div className="flex justify-between items-center mb-4">
-               <h2 className="font-bold text-lg flex items-center text-gray-100">
-                 <UserIcon className="w-5 h-5 mr-2 text-peach-500" /> Room #{activeRoom.id}
+           <div className="p-3 border-b border-gray-700 bg-gray-900 shrink-0">
+             <div className="flex justify-between items-center mb-3">
+               <h2 className="font-bold text-base flex items-center text-gray-100">
+                 <UserIcon className="w-4 h-4 mr-2 text-peach-500" /> Room #{activeRoom.id}
                </h2>
-               <div className="flex items-center bg-gray-800 px-3 py-1.5 rounded-full cursor-pointer hover:bg-gray-700 border border-gray-700 shadow-sm" onClick={() => setShowBuyTokens(true)}>
-                  <Coins className="w-4 h-4 text-peach-500 mr-2" />
-                  <span className="font-bold text-peach-500 text-sm">{user?.tokens || 0}</span>
-                  <div className="ml-2 bg-peach-600 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">+</div>
+               <div className="flex items-center bg-gray-800 px-3 py-1 rounded-full cursor-pointer hover:bg-gray-700 border border-gray-700 shadow-sm" onClick={() => setShowBuyTokens(true)}>
+                  <Coins className="w-3 h-3 text-peach-500 mr-2" />
+                  <span className="font-bold text-peach-500 text-xs">{user?.tokens || 0}</span>
+                  <div className="ml-2 bg-peach-600 text-white text-[10px] w-4 h-4 flex items-center justify-center rounded-full">+</div>
                </div>
              </div>
 
-             {/* Host Controls - Only visible to the Host (Owner/Admin can see for debugging) */}
+             {/* Host Controls */}
              {(isHost || user?.role === UserRole.OWNER) && (
-                 <div className="mb-4 bg-gray-900 p-4 rounded-xl border-2 border-peach-500/50 shadow-lg relative overflow-hidden group">
-                   <div className="absolute -top-2 -right-2 p-1 opacity-10 group-hover:opacity-20 transition-opacity">
-                      <Radio className="w-16 h-16 text-peach-500" />
+                 <div className="mb-2 bg-gray-900 p-2 rounded-lg border border-peach-500/30 relative">
+                   <div className="flex items-center justify-between mb-1">
+                     <span className="text-[10px] text-peach-500 font-bold uppercase">Host Controls</span>
                    </div>
-                   <div className="flex items-center justify-between mb-3 relative z-10">
-                     <span className="text-xs text-peach-500 font-bold flex items-center uppercase tracking-widest">
-                        <Key className="w-3 h-3 mr-2"/> Host Settings
-                     </span>
-                     {user?.role === UserRole.OWNER && <span className="text-[10px] bg-red-900 text-red-200 px-2 rounded">OWNER</span>}
+                   <div className="flex bg-gray-800 rounded border border-gray-600 p-1 mb-1">
+                      <code className="text-[10px] text-gray-300 flex-grow whitespace-nowrap overflow-hidden text-ellipsis">
+                          {BUNNY_CDN_CONFIG.RTMP_INGEST_URL}
+                      </code>
+                      <button onClick={() => navigator.clipboard.writeText(BUNNY_CDN_CONFIG.RTMP_INGEST_URL)} className="p-0.5 text-gray-500"><Copy className="w-3 h-3"/></button>
                    </div>
-                   
-                   <div className="space-y-3 relative z-10">
-                      <div>
-                          <label className="text-[10px] text-gray-500 uppercase font-bold block mb-1">RTMP Server (BunnyCDN)</label>
-                          <div className="flex bg-gray-800 rounded border border-gray-600 p-1">
-                              <code className="text-xs text-gray-300 flex-grow p-1 overflow-x-auto whitespace-nowrap scrollbar-hide">
-                                  {BUNNY_CDN_CONFIG.RTMP_INGEST_URL}
-                              </code>
-                              <button onClick={() => navigator.clipboard.writeText(BUNNY_CDN_CONFIG.RTMP_INGEST_URL)} className="p-1 hover:text-white text-gray-500"><Copy className="w-3 h-3"/></button>
-                          </div>
-                      </div>
-                      
-                      <div>
-                          <label className="text-[10px] text-gray-500 uppercase font-bold block mb-1">Stream Key</label>
-                          <div className="flex bg-gray-800 rounded border border-gray-600 p-1">
-                              {/* NOTE: In a real app, you would fetch the reserved stream key for this slot */}
-                              <input 
-                                type="text" 
-                                value={streamCode || "Enter Key or Book Slot"} 
-                                onChange={(e) => setStreamCode(e.target.value)}
-                                className="bg-transparent text-xs text-white flex-grow p-1 outline-none"
-                                placeholder="Paste Key..."
-                              />
-                               <button onClick={() => navigator.clipboard.writeText(streamCode)} className="p-1 hover:text-white text-gray-500"><Copy className="w-3 h-3"/></button>
-                          </div>
-                      </div>
-                   </div>
-                   
-                   <div className="mt-3 pt-3 border-t border-gray-800 flex justify-between items-center">
-                        <span className="text-[10px] text-gray-400">Status: {isRoomLive ? 'Streaming' : 'Ready'}</span>
-                        <button 
-                            onClick={() => alert("Signal Sent: If OBS is streaming to the URL above, you are LIVE.")}
-                            className="bg-red-600 hover:bg-red-700 text-white text-xs px-3 py-1.5 rounded font-bold transition-colors"
-                        >
-                            Test Signal
-                        </button>
-                   </div>
+                   <input 
+                        type="text" 
+                        value={streamCode || "Stream Key"} 
+                        readOnly
+                        className="w-full bg-gray-800 border border-gray-600 rounded p-1 text-[10px] text-white mb-1"
+                   />
                  </div>
                )}
              
              <div className="flex space-x-2 bg-gray-700 p-1 rounded-lg">
-               <button onClick={() => setActiveTab('chat')} className={`flex-1 py-2 text-sm font-bold rounded-md transition-colors ${activeTab === 'chat' ? 'bg-gray-600 text-white shadow' : 'text-gray-400 hover:text-white'}`}>Chat</button>
-               <button onClick={() => setActiveTab('menu')} className={`flex-1 py-2 text-sm font-bold rounded-md transition-colors ${activeTab === 'menu' ? 'bg-gray-600 text-white shadow' : 'text-gray-400 hover:text-white'}`}>Menu</button>
+               <button onClick={() => setActiveTab('chat')} className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-colors ${activeTab === 'chat' ? 'bg-gray-600 text-white shadow' : 'text-gray-400 hover:text-white'}`}>Chat</button>
+               <button onClick={() => setActiveTab('menu')} className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-colors ${activeTab === 'menu' ? 'bg-gray-600 text-white shadow' : 'text-gray-400 hover:text-white'}`}>Menu</button>
              </div>
            </div>
 
            {/* Content */}
-           <div className="flex-grow overflow-y-auto p-4 space-y-3 bg-gray-800 scrollbar-hide min-h-0">
+           <div className="flex-grow overflow-y-auto p-3 space-y-2 bg-gray-800 scrollbar-hide min-h-0">
              {activeTab === 'chat' ? (
                 <>
-                  <div className="text-xs text-gray-500 text-center my-2 uppercase tracking-wider font-bold">Chat Started</div>
+                  <div className="text-[10px] text-gray-500 text-center my-1 uppercase tracking-wider font-bold">Chat Started</div>
                   {messages.map((msg, idx) => (
-                    <div key={idx} className={`text-sm py-2 px-3 rounded-xl hover:bg-gray-700/50 transition-colors ${msg.type === 'tip' ? 'bg-amber-900/20 border border-amber-700/30' : ''}`}>
+                    <div key={idx} className={`text-xs py-1.5 px-2 rounded-lg hover:bg-gray-700/50 transition-colors ${msg.type === 'tip' ? 'bg-amber-900/20 border border-amber-700/30' : ''}`}>
                       <div className="flex items-baseline mb-0.5">
-                        <span className={`font-bold mr-2 ${msg.type === 'system' ? 'text-peach-500 text-xs uppercase' : 'text-gray-200'}`}>{msg.user}</span>
-                        {msg.type === 'tip' && <span className="font-bold text-amber-500 bg-amber-950 px-2 py-0.5 rounded text-[10px] border border-amber-900/50">TIP {msg.amount}</span>}
+                        <span className={`font-bold mr-2 ${msg.type === 'system' ? 'text-peach-500 uppercase' : 'text-gray-200'}`}>{msg.user}</span>
+                        {msg.type === 'tip' && <span className="font-bold text-amber-500 bg-amber-950 px-1.5 rounded text-[9px] border border-amber-900/50">TIP {msg.amount}</span>}
                       </div>
                       <p className={`text-gray-300 break-words leading-relaxed ${msg.type === 'system' ? 'text-peach-400 italic' : ''}`}>{msg.text}</p>
                     </div>
@@ -477,29 +436,28 @@ export const CamRooms: React.FC<CamRoomsProps> = ({ user, onUpdateUser, rooms, o
                   <div ref={chatEndRef} />
                 </>
              ) : (
-                <div className="space-y-4">
-                  <div className="bg-peach-900/10 p-4 rounded-xl border border-peach-500/20">
-                     <h3 className="font-bold text-peach-500 mb-3 flex items-center text-sm"><Gift className="w-4 h-4 mr-2" /> Send Tip</h3>
+                <div className="space-y-3">
+                  <div className="bg-peach-900/10 p-3 rounded-xl border border-peach-500/20">
+                     <h3 className="font-bold text-peach-500 mb-2 flex items-center text-xs"><Gift className="w-3 h-3 mr-2" /> Send Tip</h3>
                      <div className="grid grid-cols-4 gap-2">
                        {[10, 50, 100, 500].map(amt => (
-                         <button key={amt} onClick={() => handleTip(amt)} className="bg-gray-700 border border-gray-600 text-peach-400 font-bold py-2 rounded-lg text-sm hover:bg-peach-600 hover:text-white hover:border-peach-500 transition-all shadow-sm">
+                         <button key={amt} onClick={() => handleTip(amt)} className="bg-gray-700 border border-gray-600 text-peach-400 font-bold py-1.5 rounded-lg text-xs hover:bg-peach-600 hover:text-white hover:border-peach-500 transition-all shadow-sm">
                            {amt}
                          </button>
                        ))}
                      </div>
                   </div>
                   
-                  {/* Menu Logic here */}
                   <div className="grid grid-cols-1 gap-2">
                      {activeRoom.menuOptions?.map(option => (
                         <button 
                            key={option.id} 
                            onClick={() => handleMenuOption(option)}
                            disabled={isHost}
-                           className="flex justify-between items-center p-3 bg-gray-700/50 border border-gray-600 rounded-xl hover:bg-gray-700 hover:border-peach-500/50 transition-all group"
+                           className="flex justify-between items-center p-2.5 bg-gray-700/50 border border-gray-600 rounded-xl hover:bg-gray-700 hover:border-peach-500/50 transition-all group"
                         >
-                           <span className="font-medium text-gray-200 group-hover:text-white text-sm">{option.label}</span>
-                           <span className="bg-gray-800 px-3 py-1 rounded-lg text-xs font-bold text-peach-500 border border-gray-600 group-hover:border-peach-500">{option.cost} Tk</span>
+                           <span className="font-medium text-gray-200 group-hover:text-white text-xs">{option.label}</span>
+                           <span className="bg-gray-800 px-2 py-0.5 rounded-lg text-[10px] font-bold text-peach-500 border border-gray-600 group-hover:border-peach-500">{option.cost} Tk</span>
                         </button>
                      ))}
                   </div>
@@ -508,17 +466,17 @@ export const CamRooms: React.FC<CamRoomsProps> = ({ user, onUpdateUser, rooms, o
            </div>
 
            {activeTab === 'chat' && (
-             <div className="p-4 border-t border-gray-700 bg-gray-900 flex mt-auto items-center shrink-0 gap-2">
+             <div className="p-3 border-t border-gray-700 bg-gray-900 flex mt-auto items-center shrink-0 gap-2 pb-safe">
                  <input 
                     type="text" 
                     placeholder="Type a message..." 
                     value={chatInput}
                     onChange={(e) => setChatInput(e.target.value)}
-                    className="flex-grow p-3 bg-gray-800 border border-gray-600 rounded-xl outline-none text-sm text-white focus:border-peach-500 placeholder-gray-500 transition-colors" 
+                    className="flex-grow p-2.5 bg-gray-800 border border-gray-600 rounded-xl outline-none text-xs text-white focus:border-peach-500 placeholder-gray-500 transition-colors" 
                     onKeyDown={(e) => { if (e.key === 'Enter') handleSendMessage(); }}
                  />
-                 <button onClick={handleSendMessage} className="bg-peach-600 hover:bg-peach-700 text-white p-3 rounded-xl font-medium text-sm flex items-center justify-center transition-colors shadow-lg">
-                   <SendIcon className="w-5 h-5" />
+                 <button onClick={handleSendMessage} className="bg-peach-600 hover:bg-peach-700 text-white p-2.5 rounded-xl font-medium flex items-center justify-center transition-colors shadow-lg">
+                   <SendIcon className="w-4 h-4" />
                  </button>
              </div>
            )}
@@ -534,14 +492,14 @@ export const CamRooms: React.FC<CamRoomsProps> = ({ user, onUpdateUser, rooms, o
 
   return (
     <div>
-      <div className="flex justify-between items-end mb-10">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end mb-8 gap-4">
         <div>
-          <h1 className="text-4xl font-bold text-white mb-2 drop-shadow-md">Live Cam Rooms</h1>
-          <p className="text-gray-400">10 Exclusive High-Quality Rooms. Book yours today.</p>
+          <h1 className="text-3xl sm:text-4xl font-bold text-white mb-2 drop-shadow-md">Live Cam Rooms</h1>
+          <p className="text-gray-400 text-sm sm:text-base">10 Exclusive High-Quality Rooms. Book yours today.</p>
         </div>
         <button 
              onClick={() => setShowBuyTokens(true)}
-             className="bg-peach-600 hover:bg-peach-700 text-white px-6 py-3 rounded-full font-bold shadow-lg shadow-peach-900/20 flex items-center transition-all"
+             className="w-full sm:w-auto bg-peach-600 hover:bg-peach-700 text-white px-6 py-3 rounded-full font-bold shadow-lg shadow-peach-900/20 flex items-center justify-center transition-all"
            >
              <DollarSign className="w-4 h-4 mr-1" /> Buy Tokens
         </button>
@@ -553,7 +511,7 @@ export const CamRooms: React.FC<CamRoomsProps> = ({ user, onUpdateUser, rooms, o
           const userIsScheduled = isUserScheduledNow(room);
           
           return (
-            <div key={room.id} className="bg-gray-800 rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl hover:scale-[1.02] transition-all group border border-gray-700">
+            <div key={room.id} className="bg-gray-800 rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transition-all group border border-gray-700">
               <div className="h-44 bg-gray-900 relative flex items-center justify-center border-b border-gray-700">
                 <Video className="text-gray-700 w-12 h-12" />
                 <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-1 rounded">Room {room.id}</div>
@@ -593,30 +551,30 @@ export const CamRooms: React.FC<CamRoomsProps> = ({ user, onUpdateUser, rooms, o
            <div className="bg-gray-800 rounded-3xl w-full max-w-4xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh] border border-gray-700">
               <div className="bg-peach-600 p-6 text-white flex justify-between items-center shrink-0">
                  <div>
-                    <h2 className="text-2xl font-bold flex items-center"><Calendar className="mr-3" /> Book Room #{bookingRoomId}</h2>
-                    <p className="text-peach-100 text-sm mt-1">Select 2-hour blocks. Rate: ${getSlotPrice().toFixed(2)}/block.</p>
+                    <h2 className="text-xl md:text-2xl font-bold flex items-center"><Calendar className="mr-3 w-5 h-5 md:w-6 md:h-6" /> Book Room #{bookingRoomId}</h2>
+                    <p className="text-peach-100 text-xs md:text-sm mt-1">Select 2-hour blocks. Rate: ${getSlotPrice().toFixed(2)}/block.</p>
                  </div>
                  <button onClick={() => setShowBookingModal(false)}><X className="w-6 h-6 hover:rotate-90 transition-transform" /></button>
               </div>
 
               {generatedCode ? (
-                <div className="p-12 text-center">
-                  <div className="w-24 h-24 bg-green-500/20 text-green-500 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <Key className="w-10 h-10" />
+                <div className="p-8 md:p-12 text-center overflow-y-auto">
+                  <div className="w-20 h-20 md:w-24 md:h-24 bg-green-500/20 text-green-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <Key className="w-8 h-8 md:w-10 md:h-10" />
                   </div>
-                  <h3 className="text-3xl font-bold text-gray-100 mb-2">Booking Confirmed!</h3>
-                  <p className="text-gray-400 mb-8">You have successfully reserved your slots.</p>
+                  <h3 className="text-2xl md:text-3xl font-bold text-gray-100 mb-2">Booking Confirmed!</h3>
+                  <p className="text-gray-400 mb-8 text-sm md:text-base">You have successfully reserved your slots.</p>
                   
-                  <div className="bg-gray-900 p-8 rounded-2xl inline-block mb-8 border border-gray-700">
+                  <div className="bg-gray-900 p-6 md:p-8 rounded-2xl inline-block mb-8 border border-gray-700 w-full max-w-lg">
                     <p className="text-xs text-gray-500 uppercase font-bold mb-3 tracking-wider">Your Live Stream Key (BunnyCDN)</p>
-                    <p className="text-4xl font-mono font-bold text-peach-500 tracking-wider select-all">{generatedCode}</p>
+                    <p className="text-2xl md:text-4xl font-mono font-bold text-peach-500 tracking-wider select-all break-all">{generatedCode}</p>
                   </div>
                   
                   <p className="text-sm text-red-400 font-bold mb-8 flex justify-center items-center">
                     <AlertTriangle className="w-4 h-4 mr-2" /> SAVE THIS KEY! Enter it in OBS to go live.
                   </p>
                   
-                  <button onClick={() => setShowBookingModal(false)} className="bg-gray-700 hover:bg-gray-600 text-white px-10 py-3 rounded-full font-bold transition-colors">
+                  <button onClick={() => setShowBookingModal(false)} className="bg-gray-700 hover:bg-gray-600 text-white px-10 py-3 rounded-full font-bold transition-colors w-full md:w-auto">
                     Close
                   </button>
                 </div>
@@ -656,15 +614,15 @@ export const CamRooms: React.FC<CamRoomsProps> = ({ user, onUpdateUser, rooms, o
                     </div>
                   </div>
 
-                  <div className="bg-gray-900 border-t border-gray-800 p-6 shrink-0 flex justify-between items-center">
-                    <div>
+                  <div className="bg-gray-900 border-t border-gray-800 p-6 shrink-0 flex flex-col sm:flex-row justify-between items-center gap-4">
+                    <div className="text-center sm:text-left">
                         <p className="text-xl font-bold text-gray-200">Total: <span className="text-peach-500">${(selectedSlots.length * getSlotPrice()).toFixed(2)}</span></p>
                         <p className="text-xs text-gray-500 mt-1">Cancel up to 6hrs before for refund.</p>
                     </div>
                     <button 
                         disabled={selectedSlots.length === 0}
                         onClick={submitBooking}
-                        className={`px-8 py-3 rounded-xl font-bold text-white shadow-lg flex items-center justify-center transition-all ${selectedSlots.length === 0 ? 'bg-gray-700 text-gray-500 cursor-not-allowed' : 'bg-peach-600 hover:bg-peach-700'}`}
+                        className={`w-full sm:w-auto px-8 py-3 rounded-xl font-bold text-white shadow-lg flex items-center justify-center transition-all ${selectedSlots.length === 0 ? 'bg-gray-700 text-gray-500 cursor-not-allowed' : 'bg-peach-600 hover:bg-peach-700'}`}
                     >
                         <CheckCircle className="w-5 h-5 mr-2" /> Pay & Book
                     </button>
@@ -675,7 +633,7 @@ export const CamRooms: React.FC<CamRoomsProps> = ({ user, onUpdateUser, rooms, o
         </div>
       )}
 
-      {/* Buy Tokens Modal (Styled for dark theme) */}
+      {/* Buy Tokens Modal */}
       {showBuyTokens && (
           <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fadeIn">
              <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl p-8 border border-gray-200">

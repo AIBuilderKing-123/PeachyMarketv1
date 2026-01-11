@@ -25,6 +25,7 @@ export const Marketplace: React.FC<MarketplaceProps> = ({ user }) => {
   const [isPremiumSticky, setIsPremiumSticky] = useState(false);
   const [autoDelivery, setAutoDelivery] = useState(false);
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
+  const [previewImage, setPreviewImage] = useState<string>('https://picsum.photos/400/300?grayscale');
 
   // Simulate Live Viewers & View Counts
   useEffect(() => {
@@ -67,6 +68,21 @@ export const Marketplace: React.FC<MarketplaceProps> = ({ user }) => {
     if (!user) return alert("Please log in.");
     if (!user.isVerified) return alert("You must be ID Verified to create a listing.");
     setShowCreateModal(true);
+  };
+
+  const handlePreviewUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (file) {
+          if (file.size > 2 * 1024 * 1024) {
+              alert("Preview image too large. Max 2MB.");
+              return;
+          }
+          const reader = new FileReader();
+          reader.onloadend = () => {
+              if (reader.result) setPreviewImage(reader.result as string);
+          };
+          reader.readAsDataURL(file);
+      }
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -147,7 +163,7 @@ export const Marketplace: React.FC<MarketplaceProps> = ({ user }) => {
           title: newTitle,
           description: newDesc,
           price: parseFloat(newPrice),
-          images: ['https://picsum.photos/400/300?grayscale'],
+          images: [previewImage],
           isSticky,
           isPremiumSticky,
           autoDelivery,
@@ -176,6 +192,7 @@ export const Marketplace: React.FC<MarketplaceProps> = ({ user }) => {
         setIsPremiumSticky(false);
         setAutoDelivery(false);
         setUploadedFileName(null);
+        setPreviewImage('https://picsum.photos/400/300?grayscale');
     } catch (error) {
         console.error("Listing Error:", error);
     }
@@ -402,8 +419,9 @@ export const Marketplace: React.FC<MarketplaceProps> = ({ user }) => {
                 <label className="block text-sm font-bold text-gray-400 mb-2">Upload Preview Image (1-2 Photos)</label>
                 <div className="border-2 border-dashed border-gray-600 rounded-xl p-8 text-center bg-gray-900/50 hover:bg-gray-900 transition-colors">
                    <p className="text-gray-400 text-sm mb-2">Drag & Drop or Click to Upload Preview</p>
-                   <input type="file" className="hidden" id="preview-upload" />
+                   <input type="file" className="hidden" id="preview-upload" onChange={handlePreviewUpload} accept="image/png, image/jpeg" />
                    <label htmlFor="preview-upload" className="inline-block text-peach-500 cursor-pointer font-bold hover:text-peach-400">Browse Files</label>
+                   {previewImage && !previewImage.includes('picsum') && <p className="text-xs text-green-500 mt-2">Image Selected</p>}
                 </div>
               </div>
 

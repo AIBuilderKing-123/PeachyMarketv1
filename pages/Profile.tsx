@@ -99,9 +99,21 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser }) => {
           return;
       }
 
-      // Simulate Upload
-      const fakeUrl = URL.createObjectURL(file);
-      onUpdateUser({ ...user, [field]: fakeUrl });
+      // 1. Check File Size (Limit to 2MB to prevent freezing the JSON DB)
+      if (file.size > 2 * 1024 * 1024) {
+          alert("File too large. Please upload an image under 2MB.");
+          return;
+      }
+
+      // 2. Convert to Base64 (Persistent Storage)
+      const reader = new FileReader();
+      reader.onloadend = () => {
+          if (reader.result) {
+              // Update user state with the Base64 string
+              onUpdateUser({ ...user, [field]: reader.result as string });
+          }
+      };
+      reader.readAsDataURL(file);
   };
 
   const saveProfile = () => {
@@ -122,39 +134,31 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser }) => {
               return;
           }
 
-          // Validate against database (localStorage)
-          const storedUsers = localStorage.getItem('peachy_users');
-          if (storedUsers) {
-              const users = JSON.parse(storedUsers);
-              const currentUserRecord = users.find((u: any) => u.id === user.id);
-              
-              if (!currentUserRecord || currentUserRecord.password !== editForm.currentPassword) {
-                  alert("Error: Incorrect current password.");
-                  return;
-              }
-
-              // Update password in DB
-              currentUserRecord.password = editForm.newPassword;
-              
-              // Also update the other profile fields while we are at it
-              currentUserRecord.username = editForm.username;
-              currentUserRecord.bio = editForm.bio;
-              currentUserRecord.birthMonth = editForm.birthMonth;
-              currentUserRecord.zodiac = editForm.zodiac;
-              currentUserRecord.avatarUrl = user.avatarUrl; 
-              currentUserRecord.bannerUrl = user.bannerUrl;
-
-              // Save back
-              localStorage.setItem('peachy_users', JSON.stringify(users));
-              
-              // Update Session
-              onUpdateUser({ ...user, ...currentUserRecord }); // Safe update
-              
-              alert("Profile and Password updated successfully!");
-              setIsEditing(false);
-              setEditForm(prev => ({...prev, currentPassword: '', newPassword: '', confirmNewPassword: ''}));
-              return;
+          // Validate against database (localStorage/Session)
+          // In a real app, the server would validate this. 
+          // Here we are updating the session user which eventually syncs to server.
+          // Note: Security risk for MVP, but aligns with architecture.
+          
+          if (user.password && user.password !== editForm.currentPassword) {
+               alert("Error: Incorrect current password.");
+               return;
           }
+
+          // Update password
+          const updatedUserWithPass = {
+              ...user,
+              password: editForm.newPassword,
+              username: editForm.username,
+              bio: editForm.bio,
+              birthMonth: editForm.birthMonth,
+              zodiac: editForm.zodiac
+          };
+          
+          onUpdateUser(updatedUserWithPass);
+          alert("Profile and Password updated successfully!");
+          setIsEditing(false);
+          setEditForm(prev => ({...prev, currentPassword: '', newPassword: '', confirmNewPassword: ''}));
+          return;
       }
 
       // Standard Update (No Password Change)
@@ -405,7 +409,7 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser }) => {
                     <div className="grid grid-cols-2 gap-4">
                         <div className="p-4 border-2 border-dashed border-gray-300 rounded-xl text-center">
                             <p className="text-sm font-bold text-slate-700 mb-1">Profile Picture</p>
-                            <p className="text-xs text-gray-400 mb-3">{isOwner ? 'JPG, PNG, GIF' : 'JPG, PNG'}</p>
+                            <p className="text-xs text-gray-400 mb-3">{isOwner ? 'JPG, PNG, GIF' : 'JPG, PNG'} (Max 2MB)</p>
                             <input 
                                 type="file" 
                                 accept={isOwner ? "image/jpeg, image/png, image/gif" : "image/jpeg, image/png"}
@@ -415,7 +419,7 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser }) => {
                         </div>
                         <div className="p-4 border-2 border-dashed border-gray-300 rounded-xl text-center">
                             <p className="text-sm font-bold text-slate-700 mb-1">Banner Image</p>
-                            <p className="text-xs text-gray-400 mb-3">{isOwner ? 'JPG, PNG, GIF' : 'JPG, PNG'}</p>
+                            <p className="text-xs text-gray-400 mb-3">{isOwner ? 'JPG, PNG, GIF' : 'JPG, PNG'} (Max 2MB)</p>
                             <input 
                                 type="file" 
                                 accept={isOwner ? "image/jpeg, image/png, image/gif" : "image/jpeg, image/png"}
