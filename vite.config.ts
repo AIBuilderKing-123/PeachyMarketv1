@@ -5,7 +5,7 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 5173,
-    host: true, // Listen on all addresses for mobile access
+    host: true,
     proxy: {
       '/api': {
         target: 'http://localhost:3001',
@@ -15,7 +15,7 @@ export default defineConfig({
     }
   },
   build: {
-    outDir: 'dist',
-    emptyOutDir: false // Disabled to prevent EACCES errors on Plesk
+    outDir: 'build', // Changed from 'dist' to avoid permission locks
+    emptyOutDir: true
   }
 });
