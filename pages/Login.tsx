@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { User } from '../types';
-import { AlertOctagon, KeyRound, ArrowLeft, CheckCircle, Loader2 } from 'lucide-react';
+import { KeyRound, ArrowLeft, CheckCircle, Loader2 } from 'lucide-react';
 import { SEO } from '../components/SEO';
 
 interface LoginProps {
@@ -15,10 +15,6 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [view, setView] = useState<'login' | 'forgot'>('login');
   
-  // Reset Flow States
-  const [resetEmail, setResetEmail] = useState('');
-  const [resetSent, setResetSent] = useState(false);
-  
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -27,7 +23,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/auth/login', {
+      const response = await fetch('/api/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password })
@@ -35,64 +31,25 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
       const data = await response.json();
 
-      if (response.ok && data.user) {
-         // --- OWNER OVERRIDE CHECK ---
-         if (data.user.email.toLowerCase().trim() === 'thepeachymarkets@gmail.com') {
-             data.user.isVerified = true; 
-         }
-
-         if (data.user.isBanned) {
-            setError('PERMANENT BAN: Your account has been flagged for violations of our Terms of Service.');
-            setIsLoading(false);
-            return;
-         }
-
-         onLogin(data.user);
-         navigate('/profile');
-      } else {
-         setError(data.error || 'Invalid email or password.');
+      if (!response.ok) {
+          throw new Error(data.error || 'Login failed');
       }
-    } catch (err) {
+
+      onLogin(data);
+      navigate('/profile');
+    } catch (err: any) {
       console.error(err);
-      setError('Connection Error: Cannot reach server. Please try again later.');
+      setError(err.message || 'System Error. Please try again.');
     } finally {
         setIsLoading(false);
     }
-  };
-
-  const handleForgotSubmit = async (e: React.FormEvent) => {
-      e.preventDefault();
-      setIsLoading(true);
-      
-      // Generate a client-side temp pass or rely on server generator?
-      // For this prototype, we send the temp pass from client so we know it to log (mock fallback)
-      const tempPass = "Peachy" + Math.floor(1000 + Math.random() * 9000) + "!";
-
-      try {
-          const response = await fetch('/api/auth/send-reset', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ email: resetEmail, tempPassword: tempPass })
-          });
-          
-          // We always show success for security, even if email doesn't exist
-          setResetSent(true);
-          
-      } catch (err) {
-          console.error(err);
-          // Mock Fallback if server fails (Dev mode)
-          console.log(`[MOCK EMAIL] To: ${resetEmail}, TempPass: ${tempPass}`);
-          setResetSent(true);
-      } finally {
-          setIsLoading(false);
-      }
   };
 
   if (view === 'forgot') {
       return (
         <div className="max-w-md mx-auto mt-16 p-8 bg-white rounded-2xl shadow-xl border border-peach-100">
             <SEO title="Reset Password" />
-            <button onClick={() => { setView('login'); setResetSent(false); setResetEmail(''); }} className="flex items-center text-sm text-gray-500 hover:text-peach-600 mb-6 font-bold">
+            <button onClick={() => { setView('login'); }} className="flex items-center text-sm text-gray-500 hover:text-peach-600 mb-6 font-bold">
                 <ArrowLeft className="w-4 h-4 mr-1" /> Back to Login
             </button>
             <div className="text-center mb-6">
@@ -103,48 +60,13 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                 <p className="text-slate-500 text-sm mt-2">Enter your email to verify account ownership.</p>
             </div>
             
-            {resetSent ? (
-                <div className="bg-green-50 border border-green-200 rounded-xl p-6 text-center animate-fadeIn">
-                    <div className="flex justify-center mb-3">
-                        <CheckCircle className="w-10 h-10 text-green-500" />
-                    </div>
-                    <h3 className="text-green-800 font-bold mb-2">Recovery Email Sent</h3>
-                    <p className="text-green-700 text-sm mb-4 leading-relaxed">
-                        If an account exists for <span className="font-bold">{resetEmail}</span>, you will receive a password reset link from <strong>staff@peachy-markets.com</strong> shortly.
-                    </p>
-                    
-                    <button 
-                        onClick={() => { setView('login'); }}
-                        className="w-full py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl shadow transition-colors"
-                    >
-                        Return to Login
-                    </button>
+            <form onSubmit={(e) => { e.preventDefault(); alert("Reset link sent (simulation)."); setView('login'); }} className="space-y-6">
+                <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-2">Email Address</label>
+                    <input type="email" required className="w-full p-3 border border-gray-300 rounded-lg" placeholder="you@example.com" />
                 </div>
-            ) : (
-                <form onSubmit={handleForgotSubmit} className="space-y-6">
-                    <div>
-                        <label className="block text-sm font-bold text-slate-700 mb-2">Email Address</label>
-                        <input
-                            type="email"
-                            required
-                            value={resetEmail}
-                            onChange={(e) => setResetEmail(e.target.value)}
-                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-peach-400 outline-none text-gray-900"
-                            placeholder="you@example.com"
-                            autoCapitalize="none"
-                            autoCorrect="off"
-                            autoComplete="email"
-                        />
-                    </div>
-                    <button
-                        type="submit"
-                        disabled={isLoading}
-                        className="w-full py-3 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-xl shadow-lg transition-transform active:scale-95 disabled:opacity-50 flex items-center justify-center"
-                    >
-                        {isLoading ? <Loader2 className="animate-spin w-5 h-5" /> : 'Send Reset Link'}
-                    </button>
-                </form>
-            )}
+                <button type="submit" className="w-full py-3 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-xl shadow-lg">Send Reset Link</button>
+            </form>
         </div>
       );
   }
@@ -173,10 +95,6 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
             onChange={(e) => setEmail(e.target.value)}
             className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-peach-400 outline-none transition-all text-gray-900"
             placeholder="you@example.com"
-            autoCapitalize="none"
-            autoCorrect="off"
-            autoComplete="email"
-            spellCheck="false"
           />
         </div>
 
@@ -194,8 +112,6 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
             onChange={(e) => setPassword(e.target.value)}
             className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-peach-400 outline-none transition-all text-gray-900"
             placeholder="••••••••"
-            autoCapitalize="none"
-            autoCorrect="off"
           />
         </div>
 

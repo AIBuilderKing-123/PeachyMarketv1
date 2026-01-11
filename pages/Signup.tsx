@@ -33,80 +33,36 @@ export const Signup: React.FC<SignupProps> = ({ onLogin }) => {
     setError('');
     setIsLoading(true);
 
-    // Basic Validation
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match.');
       setIsLoading(false);
       return;
     }
 
-    const isOwnerEmail = formData.email.toLowerCase() === 'thepeachymarkets@gmail.com';
-    
-    if (!isOwnerEmail && formData.username.includes(' ')) {
-      setError('Screen Name cannot contain spaces.');
-      setIsLoading(false);
-      return;
-    }
-
-    // Prepare User Object for Server
-    let initialRole = UserRole.USER;
-    let isVerified = false;
-    let initialBalance = 0;
-    let initialTokens = 0;
-    let vipExpiry: string | undefined = undefined;
-
-    if (isOwnerEmail) {
-        initialRole = UserRole.OWNER;
-        isVerified = true;
-        initialBalance = 10000;
-        initialTokens = 50000;
-    }
-    
-    // NOTE: Referral Logic simplified for Server-Side. 
-    // Ideally server handles referral validation, but for this JSON-DB implementation we pass the code.
-
-    const newUserPayload: Partial<User> & { password: string } = {
-      id: `u${Date.now()}`,
-      email: formData.email,
-      username: formData.username,
-      realName: formData.realName,
-      password: formData.password,
-      role: initialRole,
-      joinedAt: new Date().toISOString(),
-      avatarUrl: `https://api.dicebear.com/7.x/initials/svg?seed=${formData.username}`,
-      bannerUrl: 'https://picsum.photos/1200/400?grayscale',
-      balance: initialBalance,
-      tokens: initialTokens,
-      isVerified: isVerified,
-      bio: `Hi, I'm ${formData.username}!`,
-      referralCode: formData.referralCode // Pass to server
-    };
-
     try {
-        const response = await fetch('/api/auth/signup', {
+        const response = await fetch('/api/signup', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(newUserPayload)
+            body: JSON.stringify({
+                email: formData.email,
+                password: formData.password,
+                username: formData.username,
+                realName: formData.realName,
+                referralCode: formData.referralCode
+            })
         });
 
         const data = await response.json();
 
-        if (response.ok) {
-            onLogin(data.user); // data.user returned from server
-            navigate('/profile');
-            
-            if (initialRole === UserRole.OWNER) {
-                alert('Welcome Owner! Full permissions granted.');
-            } else {
-                alert('Account created successfully! Please proceed to Verification.');
-            }
-        } else {
-            setError(data.error || 'Failed to create account.');
+        if (!response.ok) {
+            throw new Error(data.error || 'Signup failed');
         }
 
-    } catch (err) {
-        console.error(err);
-        setError('Server Error: Unable to create account. Please check your connection.');
+        onLogin(data);
+        navigate('/profile');
+        alert('Account created successfully!');
+    } catch (err: any) {
+        setError(err.message);
     } finally {
         setIsLoading(false);
     }
@@ -114,7 +70,7 @@ export const Signup: React.FC<SignupProps> = ({ onLogin }) => {
 
   return (
     <div className="max-w-2xl mx-auto mt-10 p-8 bg-white rounded-2xl shadow-xl border border-peach-100">
-      <SEO title="Create Account" description="Join The Peachy Marketplace today and start connecting with verified users." />
+      <SEO title="Create Account" description="Join The Peachy Marketplace today." />
       <div className="text-center mb-8">
         <h1 className="text-3xl font-bold text-slate-800">Create Account</h1>
         <p className="text-slate-500">Join The Peachy Marketplace today</p>
@@ -155,7 +111,6 @@ export const Signup: React.FC<SignupProps> = ({ onLogin }) => {
               autoCapitalize="none"
               autoCorrect="off"
             />
-            <p className="text-xs text-red-500 font-bold mt-1">NO SPACES ALLOWED (Except Owner)</p>
           </div>
         </div>
 
@@ -171,7 +126,6 @@ export const Signup: React.FC<SignupProps> = ({ onLogin }) => {
             placeholder="First Last"
             autoCapitalize="words"
           />
-          <p className="text-xs text-gray-400 mt-1">Private. For ID verification and billing only.</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -217,9 +171,6 @@ export const Signup: React.FC<SignupProps> = ({ onLogin }) => {
               autoCapitalize="none"
               autoCorrect="off"
             />
-            <p className="text-xs text-peach-600 mt-2">
-                Use a valid partner code to get <span className="font-bold">1 Month Free VIP Status</span> instantly!
-            </p>
         </div>
 
         <div className="pt-4">

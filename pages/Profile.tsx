@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { User, UserRole, Transaction } from '../types';
-import { Camera, Edit, UserPlus, MessageCircle, Flag, ArrowUpRight, ArrowDownLeft, Wallet, Calendar, Clock, DollarSign, Coins, Heart, Users as UsersIcon, Link as LinkIcon, Copy, X, Save, Shield, Lock, PlusCircle } from 'lucide-react';
+import { Camera, Edit, Wallet, Calendar, Clock, DollarSign, Coins, Link as LinkIcon, Copy, X, Save, Lock, PlusCircle, ArrowUpCircle, ArrowDownCircle, Shield } from 'lucide-react';
 import { SEO } from '../components/SEO';
 import { useNavigate } from 'react-router-dom';
 import { PayPalButton } from '../components/PayPalButton';
@@ -23,7 +23,6 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser }) => {
   // Social Stats State (Reset to 0)
   const [followerCount, setFollowerCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
-  const [isFollowing, setIsFollowing] = useState(false);
 
   // Edit Form State
   const [editForm, setEditForm] = useState({
@@ -36,60 +35,47 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser }) => {
       confirmNewPassword: ''
   });
 
-  // OWNER LOGIC: Check by Role OR Email to ensure access persists if role changes
   const isOwner = user.role === UserRole.OWNER || user.email === 'thepeachymarkets@gmail.com';
-
-  const handleFollowToggle = () => {
-    try {
-        if (Math.random() > 0.95) {
-            throw new Error("Simulated connection error");
-        }
-
-        if (isFollowing) {
-            setFollowerCount(prev => Math.max(0, prev - 1));
-            setIsFollowing(false);
-        } else {
-            setFollowerCount(prev => prev + 1);
-            setIsFollowing(true);
-        }
-    } catch (e) {
-        alert("Error: Unable to update follow status. The server is not responding.");
-    }
-  };
 
   const handleExportCSV = () => {
       if (transactions.length === 0) return alert("No transactions to export.");
-      try {
-          alert("Success: Transaction history exported to CSV. Download starting...");
-      } catch (e) {
-          alert("Error: Failed to generate CSV file.");
-      }
+      alert("Success: Transaction history exported to CSV. Download starting...");
   };
 
-  const handleDepositSuccess = (details: any) => {
+  const handleDepositSuccess = async (details: any) => {
     const amount = parseFloat(depositAmount);
     if (!amount || isNaN(amount)) return;
     
-    const newBalance = user.balance + amount;
-    
-    // Update User Balance
-    onUpdateUser({ ...user, balance: newBalance });
-    
-    // Add Local Transaction Record
-    const newTx: Transaction = {
-        id: details.id || `dep-${Date.now()}`,
-        type: 'DEPOSIT',
-        amount: amount,
-        date: new Date().toLocaleDateString(),
-        description: 'Wallet Deposit',
-        status: 'COMPLETED'
-    };
-    
-    setTransactions(prev => [newTx, ...prev]);
-    
-    setShowDepositModal(false);
-    setDepositAmount('');
-    alert(`Success! $${amount.toFixed(2)} has been added to your balance.`);
+    try {
+        const response = await fetch('/api/user/deposit', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: user.id, amount })
+        });
+        
+        const updatedUser = await response.json();
+        
+        // Update User Balance in App
+        onUpdateUser(updatedUser);
+        
+        // Add Local Transaction Record (In a real app, you'd fetch this from API too)
+        const newTx: Transaction = {
+            id: details.id || `dep-${Date.now()}`,
+            type: 'DEPOSIT',
+            amount: amount,
+            date: new Date().toLocaleDateString(),
+            description: 'Wallet Deposit',
+            status: 'COMPLETED'
+        };
+        
+        setTransactions(prev => [newTx, ...prev]);
+        setShowDepositModal(false);
+        setDepositAmount('');
+        alert(`Success! $${amount.toFixed(2)} has been added to your balance.`);
+
+    } catch (e) {
+        alert("Server Sync Error: Money collected but failed to update balance. Contact Admin.");
+    }
   };
 
   const getTypeColor = (type: Transaction['type']) => {
@@ -107,7 +93,6 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser }) => {
     }
   };
 
-  // --- EDIT PROFILE LOGIC ---
   const handleEditChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
       setEditForm({ ...editForm, [e.target.name]: e.target.value });
   };
@@ -117,94 +102,61 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser }) => {
       if (!file) return;
 
       const isGif = file.type === 'image/gif';
-      
-      // ENFORCE FILE TYPE RULES
       if (isGif && !isOwner) {
           alert("Restricted: Only the Owner can use GIF images. Please upload a JPEG or PNG.");
-          e.target.value = ''; // Reset input
+          e.target.value = ''; 
           return;
       }
       
-      if (!['image/jpeg', 'image/png', 'image/gif'].includes(file.type)) {
-          alert("Invalid file type. Please upload JPG or PNG.");
-          return;
-      }
-
-      // 1. Check File Size (Limit to 2MB to prevent freezing the JSON DB)
-      if (file.size > 2 * 1024 * 1024) {
-          alert("File too large. Please upload an image under 2MB.");
-          return;
-      }
-
-      // 2. Convert to Base64 (Persistent Storage)
       const reader = new FileReader();
       reader.onloadend = () => {
           if (reader.result) {
-              // Update user state with the Base64 string
               onUpdateUser({ ...user, [field]: reader.result as string });
           }
       };
       reader.readAsDataURL(file);
   };
 
-  const saveProfile = () => {
-      // ENFORCE USERNAME RULES
+  const saveProfile = async () => {
+      // Validate
       if (!isOwner && editForm.username.includes(' ')) {
           alert("Validation Error: Screen Name cannot contain spaces.");
           return;
       }
 
-      // PASSWORD CHANGE LOGIC
-      if (editForm.newPassword) {
-          if (editForm.newPassword !== editForm.confirmNewPassword) {
-              alert("Error: New passwords do not match.");
-              return;
-          }
-          if (!editForm.currentPassword) {
-              alert("Error: Current password is required to set a new password.");
-              return;
-          }
-
-          // Validate against database (localStorage/Session)
-          if (user.password && user.password !== editForm.currentPassword) {
-               alert("Error: Incorrect current password.");
-               return;
-          }
-
-          // Update password
-          const updatedUserWithPass = {
-              ...user,
-              password: editForm.newPassword,
-              username: editForm.username,
-              bio: editForm.bio,
-              birthMonth: editForm.birthMonth,
-              zodiac: editForm.zodiac
-          };
-          
-          onUpdateUser(updatedUserWithPass);
-          alert("Profile and Password updated successfully!");
-          setIsEditing(false);
-          setEditForm(prev => ({...prev, currentPassword: '', newPassword: '', confirmNewPassword: ''}));
-          return;
-      }
-
-      // Standard Update (No Password Change)
-      onUpdateUser({
-          ...user,
+      const payload: any = {
+          id: user.id,
           username: editForm.username,
           bio: editForm.bio,
           birthMonth: editForm.birthMonth,
           zodiac: editForm.zodiac
-      });
-      setIsEditing(false);
-      alert("Profile updated successfully!");
+      };
+
+      if (editForm.newPassword) {
+          if (editForm.newPassword !== editForm.confirmNewPassword) return alert("New passwords do not match.");
+          payload.password = editForm.newPassword;
+      }
+
+      try {
+          const response = await fetch('/api/user/update', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
+          });
+          const updatedUser = await response.json();
+          onUpdateUser(updatedUser);
+          setIsEditing(false);
+          alert("Profile updated successfully!");
+      } catch (e) {
+          alert("Failed to update profile on server.");
+      }
   };
 
   return (
     <div className="max-w-4xl mx-auto relative">
       <SEO 
         title={`${user.username}'s Profile`} 
-        description={`Check out ${user.username} on The Peachy Marketplace. View their bio, listings, and connect.`}
+        description={`Check out ${user.username} on The Peachy Marketplace.`}
         image={user.avatarUrl}
       />
       
@@ -235,9 +187,8 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser }) => {
            </div>
         </div>
 
-        {/* Actions Bar (Right aligned) */}
+        {/* Actions Bar */}
         <div className="flex justify-end pt-4 space-x-3 mb-4">
-           {/* Self-Profile: Edit Button */}
            <button 
              onClick={() => setIsEditing(true)}
              className="flex items-center px-4 py-2 bg-slate-800 text-white rounded-full font-bold shadow hover:bg-slate-700 transition"
@@ -260,7 +211,6 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser }) => {
                )}
              </div>
              
-             {/* Follower Counts */}
              <div className="flex items-center mt-2 space-x-6">
                 <div className="flex items-center cursor-pointer hover:text-peach-500 transition-colors group">
                     <span className="font-bold text-gray-200 text-lg mr-1 group-hover:text-peach-500">{followerCount.toLocaleString()}</span>
@@ -276,6 +226,42 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser }) => {
            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
              {/* Left Column: Stats/Details */}
              <div className="space-y-4">
+               
+               {/* Wallet Summary - High Visibility */}
+               <div className="bg-gradient-to-br from-slate-800 to-slate-900 p-5 rounded-xl shadow-lg text-white border border-slate-700">
+                 <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-3 flex items-center">
+                    <Wallet className="w-3 h-3 mr-1 text-peach-500" /> My Wallet
+                 </h3>
+                 <div className="mb-4">
+                    <div className="text-gray-400 text-xs mb-1">Available Funds</div>
+                    <div className="text-3xl font-bold flex items-center text-green-400">
+                       <DollarSign className="w-6 h-6" /> {user.balance.toFixed(2)}
+                    </div>
+                    
+                    {/* BUTTONS: DEPOSIT & PAYOUT */}
+                    <div className="grid grid-cols-2 gap-3 mt-5">
+                        <button 
+                            onClick={() => setShowDepositModal(true)}
+                            className="bg-peach-600 hover:bg-peach-700 text-white text-xs py-3 rounded-lg font-bold shadow-lg shadow-peach-900/20 transition-all flex items-center justify-center transform active:scale-95"
+                        >
+                            <ArrowDownCircle className="w-4 h-4 mr-1.5" /> Deposit
+                        </button>
+                        <button 
+                            onClick={() => navigate('/payouts')}
+                            className="bg-slate-700 hover:bg-slate-600 text-white text-xs py-3 rounded-lg font-bold shadow transition-all flex items-center justify-center transform active:scale-95 border border-slate-600"
+                        >
+                            <ArrowUpCircle className="w-4 h-4 mr-1.5 text-green-400" /> Withdraw
+                        </button>
+                    </div>
+                 </div>
+                 <div className="pt-4 border-t border-slate-700">
+                    <div className="text-gray-400 text-xs mb-1">Tokens</div>
+                    <div className="text-xl font-bold flex items-center text-yellow-400">
+                       <Coins className="w-5 h-5 mr-2" /> {user.tokens.toLocaleString()}
+                    </div>
+                 </div>
+               </div>
+
                <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
                  <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Details</h3>
                  <div className="space-y-2 text-sm">
@@ -297,42 +283,8 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser }) => {
                    </div>
                  </div>
                </div>
-               
-               {/* Wallet Summary */}
-               <div className="bg-gradient-to-br from-slate-800 to-slate-900 p-4 rounded-xl shadow-md text-white">
-                 <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-3 flex items-center">
-                    <Wallet className="w-3 h-3 mr-1" /> My Wallet
-                 </h3>
-                 <div className="mb-4">
-                    <div className="text-gray-400 text-xs">Cash Balance</div>
-                    <div className="text-2xl font-bold flex items-center text-green-400">
-                       <DollarSign className="w-5 h-5" /> {user.balance.toFixed(2)}
-                    </div>
-                    {/* BUTTONS: DEPOSIT & PAYOUT */}
-                    <div className="grid grid-cols-2 gap-3 mt-4">
-                        <button 
-                            onClick={() => setShowDepositModal(true)}
-                            className="bg-slate-700 hover:bg-slate-600 text-white text-xs py-2.5 rounded-lg font-bold shadow transition-colors flex items-center justify-center border border-slate-600"
-                        >
-                            <PlusCircle className="w-4 h-4 mr-2 text-green-400" /> Deposit
-                        </button>
-                        <button 
-                            onClick={() => navigate('/payouts')}
-                            className="bg-green-600 hover:bg-green-700 text-white text-xs py-2.5 rounded-lg font-bold shadow transition-colors flex items-center justify-center"
-                        >
-                            Request Payout
-                        </button>
-                    </div>
-                 </div>
-                 <div>
-                    <div className="text-gray-400 text-xs">Tokens</div>
-                    <div className="text-xl font-bold flex items-center text-yellow-400">
-                       <Coins className="w-4 h-4 mr-2" /> {user.tokens.toLocaleString()}
-                    </div>
-                 </div>
-               </div>
 
-               {/* Referral Link (Diamond VIP Only) */}
+               {/* Referral Link */}
                {(user.role === UserRole.DIAMOND_VIP || isOwner) && (
                     <div className="bg-gradient-to-r from-blue-900 to-indigo-900 p-4 rounded-xl shadow-md text-white mt-4 border border-blue-700/50">
                         <h3 className="text-xs font-bold text-blue-200 uppercase tracking-wide mb-2 flex items-center">
@@ -346,16 +298,12 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser }) => {
                             <span className="truncate">peachy.market/r/{user.username}</span>
                             <Copy className="w-3 h-3 text-blue-300" />
                         </div>
-                        <p className="text-[10px] text-blue-300 mt-2 leading-tight">
-                            Earn 5% commission on service fees from users you refer.
-                        </p>
                     </div>
                 )}
              </div>
 
              {/* Middle/Right: Tabbed Content */}
              <div className="md:col-span-2">
-                {/* Tabs */}
                 <div className="flex space-x-4 border-b border-gray-700 mb-4">
                    <button 
                      onClick={() => setActiveTab('about')}
@@ -489,7 +437,6 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser }) => {
                     <div className="grid grid-cols-2 gap-4">
                         <div className="p-4 border-2 border-dashed border-gray-300 rounded-xl text-center">
                             <p className="text-sm font-bold text-slate-700 mb-1">Profile Picture</p>
-                            <p className="text-xs text-gray-400 mb-3">{isOwner ? 'JPG, PNG, GIF' : 'JPG, PNG'} (Max 2MB)</p>
                             <input 
                                 type="file" 
                                 accept={isOwner ? "image/jpeg, image/png, image/gif" : "image/jpeg, image/png"}
@@ -499,7 +446,6 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser }) => {
                         </div>
                         <div className="p-4 border-2 border-dashed border-gray-300 rounded-xl text-center">
                             <p className="text-sm font-bold text-slate-700 mb-1">Banner Image</p>
-                            <p className="text-xs text-gray-400 mb-3">{isOwner ? 'JPG, PNG, GIF' : 'JPG, PNG'} (Max 2MB)</p>
                             <input 
                                 type="file" 
                                 accept={isOwner ? "image/jpeg, image/png, image/gif" : "image/jpeg, image/png"}
@@ -519,9 +465,6 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser }) => {
                             onChange={handleEditChange}
                             className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-peach-400 outline-none text-gray-900 bg-white"
                         />
-                        <p className="text-xs text-gray-400 mt-1">
-                            {isOwner ? 'Owner Privileges: Spaces Allowed' : 'No spaces allowed.'}
-                        </p>
                     </div>
 
                     {/* Bio */}

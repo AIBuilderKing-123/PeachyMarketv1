@@ -5,9 +5,10 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 5173,
+    host: true, // Listen on all addresses for mobile access
     proxy: {
       '/api': {
-        target: 'http://localhost:80', // Proxy to server.cjs running on port 80 (or 3000 if you change it)
+        target: 'http://localhost:3001',
         changeOrigin: true,
         secure: false,
       }
