@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { User, UserRole } from '../types';
 import { SEO } from '../components/SEO';
+import { Loader2 } from 'lucide-react';
 
 interface SignupProps {
   onLogin: (user: User) => void;
@@ -12,11 +13,12 @@ export const Signup: React.FC<SignupProps> = ({ onLogin }) => {
     email: '',
     password: '',
     confirmPassword: '',
-    username: '', // Screen Name
-    realName: '', // Full Legal Name
-    referralCode: '', // New Field
+    username: '', 
+    realName: '',
+    referralCode: '', 
   });
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -26,136 +28,87 @@ export const Signup: React.FC<SignupProps> = ({ onLogin }) => {
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setIsLoading(true);
 
     // Basic Validation
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match.');
+      setIsLoading(false);
       return;
     }
 
-    // STRICT USERNAME RULES
-    // No spaces allowed for regular members.
-    // OWNER EXCEPTION: Owner can have spaces.
     const isOwnerEmail = formData.email.toLowerCase() === 'thepeachymarkets@gmail.com';
     
     if (!isOwnerEmail && formData.username.includes(' ')) {
       setError('Screen Name cannot contain spaces.');
+      setIsLoading(false);
       return;
     }
 
+    // Prepare User Object for Server
+    let initialRole = UserRole.USER;
+    let isVerified = false;
+    let initialBalance = 0;
+    let initialTokens = 0;
+    let vipExpiry: string | undefined = undefined;
+
+    if (isOwnerEmail) {
+        initialRole = UserRole.OWNER;
+        isVerified = true;
+        initialBalance = 10000;
+        initialTokens = 50000;
+    }
+    
+    // NOTE: Referral Logic simplified for Server-Side. 
+    // Ideally server handles referral validation, but for this JSON-DB implementation we pass the code.
+
+    const newUserPayload: Partial<User> & { password: string } = {
+      id: `u${Date.now()}`,
+      email: formData.email,
+      username: formData.username,
+      realName: formData.realName,
+      password: formData.password,
+      role: initialRole,
+      joinedAt: new Date().toISOString(),
+      avatarUrl: `https://api.dicebear.com/7.x/initials/svg?seed=${formData.username}`,
+      bannerUrl: 'https://picsum.photos/1200/400?grayscale',
+      balance: initialBalance,
+      tokens: initialTokens,
+      isVerified: isVerified,
+      bio: `Hi, I'm ${formData.username}!`,
+      referralCode: formData.referralCode // Pass to server
+    };
+
     try {
-      // Get existing users
-      const storedUsers = localStorage.getItem('peachy_users');
-      const users: User[] = storedUsers ? JSON.parse(storedUsers) : [];
+        const response = await fetch('/api/auth/signup', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newUserPayload)
+        });
 
-      // Check for duplicates
-      if (users.some((u: any) => u.email === formData.email)) {
-        setError('Email is already registered.');
-        return;
-      }
+        const data = await response.json();
 
-      if (users.some((u: any) => u.username.toLowerCase() === formData.username.toLowerCase())) {
-        setError('Screen Name is already taken.');
-        return;
-      }
-
-      // REFERRAL LOGIC
-      let referredByUserId: string | undefined = undefined;
-      let initialRole = UserRole.USER;
-      let isVerified = false;
-      let initialBalance = 0;
-      let initialTokens = 0;
-      let vipExpiry: string | undefined = undefined;
-      let isReferralValid = false;
-
-      // --- OWNER OVERRIDE ---
-      // If the specific owner email is used, force OWNER role and Verification
-      if (isOwnerEmail) {
-          initialRole = UserRole.OWNER;
-          isVerified = true;
-          initialBalance = 10000; // Starter funds for testing
-          initialTokens = 50000;
-      }
-
-      if (formData.referralCode) {
-          const referrer = users.find(u => 
-              (u.role === UserRole.DIAMOND_VIP || u.isAffiliate) && 
-              (u.username.toLowerCase() === formData.referralCode.toLowerCase() || u.referralCode === formData.referralCode)
-          );
-
-          if (referrer) {
-              // Valid Referrer Found
-              referredByUserId = referrer.id;
-              isReferralValid = true;
-              
-              // 1. New User gets 1 Month Free VIP (Only if not already Owner)
-              if (initialRole !== UserRole.OWNER) {
-                 initialRole = UserRole.VIP;
-              }
-              const date = new Date();
-              date.setDate(date.getDate() + 30);
-              vipExpiry = date.toISOString();
-
-              // 2. Referrer gets 100% Rev Share for 1 Month (Update Referrer)
-              referrer.bonusRevShareExpiry = date.toISOString();
-              // Save updated referrer immediately to list
-              // Note: Ideally we update this in the backend, but we modify the array here
-              // referrer object in `users` array is a reference, so it's updated in `users`
-          } else {
-              // Invalid code logic - optionally error or just ignore
-              // For now, let's ignore but warn? Or just proceed without bonus.
-              // Let's decide to show an error if they tried to use one.
-              setError("Invalid Referral Code. Please check or leave blank.");
-              return;
-          }
-      }
-
-      // Create New User
-      const newUser: User = {
-        id: `u${Date.now()}`,
-        email: formData.email,
-        username: formData.username,
-        realName: formData.realName,
-        // @ts-ignore - simulating password stored in user obj for mock auth
-        password: formData.password, 
-        role: initialRole,
-        joinedAt: new Date().toISOString(),
-        avatarUrl: `https://api.dicebear.com/7.x/initials/svg?seed=${formData.username}`,
-        bannerUrl: 'https://picsum.photos/1200/400?grayscale',
-        balance: initialBalance,
-        tokens: initialTokens,
-        isVerified: isVerified,
-        bio: `Hi, I'm ${formData.username}!`,
-        referredBy: referredByUserId,
-        vipExpiry: vipExpiry,
-        referralEarnings: 0
-      };
-
-      // Save to Local Storage
-      users.push(newUser);
-      localStorage.setItem('peachy_users', JSON.stringify(users));
-
-      // Login immediately
-      // Remove password for session
-      const { password, ...safeUser } = newUser as any;
-      onLogin(safeUser as User);
-      navigate('/profile'); 
-      
-      if (initialRole === UserRole.OWNER) {
-          alert('Welcome Owner! Full permissions granted.');
-      } else if (isReferralValid) {
-          alert('Account created! Referral Code Accepted: You have 1 Month of Free VIP Status.');
-      } else {
-          alert('Account created successfully! Please proceed to Verification.');
-      }
+        if (response.ok) {
+            onLogin(data.user); // data.user returned from server
+            navigate('/profile');
+            
+            if (initialRole === UserRole.OWNER) {
+                alert('Welcome Owner! Full permissions granted.');
+            } else {
+                alert('Account created successfully! Please proceed to Verification.');
+            }
+        } else {
+            setError(data.error || 'Failed to create account.');
+        }
 
     } catch (err) {
-      console.error(err);
-      alert("System Error: Unable to create account. Please check your storage settings or try a different browser.");
-      setError('Failed to create account. Please ensure local storage is enabled.');
+        console.error(err);
+        setError('Server Error: Unable to create account. Please check your connection.');
+    } finally {
+        setIsLoading(false);
     }
   };
 
@@ -272,9 +225,10 @@ export const Signup: React.FC<SignupProps> = ({ onLogin }) => {
         <div className="pt-4">
            <button
             type="submit"
-            className="w-full py-4 bg-peach-500 hover:bg-peach-600 text-white font-bold text-lg rounded-xl shadow-lg shadow-peach-200 transition-transform active:scale-95"
+            disabled={isLoading}
+            className="w-full py-4 bg-peach-500 hover:bg-peach-600 text-white font-bold text-lg rounded-xl shadow-lg shadow-peach-200 transition-transform active:scale-95 flex items-center justify-center"
           >
-            Create Account
+             {isLoading ? <Loader2 className="animate-spin w-5 h-5" /> : 'Create Account'}
           </button>
         </div>
       </form>

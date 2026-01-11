@@ -30,6 +30,15 @@ export const Admin: React.FC = () => {
 
   // Initialize Mock Data
   useEffect(() => {
+    // Dynamic Date Generation for Mock Data
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    // Format: YYYY-MM-DD
+    const todayStr = today.toISOString().split('T')[0];
+    const yesterdayStr = yesterday.toISOString().split('T')[0];
+
     // Mock Verifications
     setVerifications([
       {
@@ -40,7 +49,7 @@ export const Admin: React.FC = () => {
         // Using high-res placeholders
         idPhotoUrl: 'https://images.unsplash.com/photo-1563237023-b1e970526dcb?auto=format&fit=crop&w=1200&q=90', 
         selfieUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=1200&q=90',
-        date: '2023-10-25'
+        date: yesterdayStr
       },
       {
         id: 'v2',
@@ -49,7 +58,7 @@ export const Admin: React.FC = () => {
         dob: '1990-12-01',
         idPhotoUrl: 'https://images.unsplash.com/photo-1628155930542-3c7a64e2c833?auto=format&fit=crop&w=1200&q=90',
         selfieUrl: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=1200&q=90',
-        date: '2023-10-26'
+        date: todayStr
       }
     ]);
 

@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { User, UserRole } from '../types';
-import { AlertOctagon, KeyRound, ArrowLeft, Mail, CheckCircle } from 'lucide-react';
+import { User } from '../types';
+import { AlertOctagon, KeyRound, ArrowLeft, CheckCircle, Loader2 } from 'lucide-react';
 import { SEO } from '../components/SEO';
-import { API_URL } from '../constants'; // Assumes API_URL is relative or absolute
 
 interface LoginProps {
   onLogin: (user: User) => void;
@@ -13,115 +12,80 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [banReason, setBanReason] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const [view, setView] = useState<'login' | 'forgot'>('login');
   
   // Reset Flow States
   const [resetEmail, setResetEmail] = useState('');
   const [resetSent, setResetSent] = useState(false);
-  const [isSending, setIsSending] = useState(false);
   
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    setBanReason('');
+    setIsLoading(true);
 
     try {
-      // Fetch users from local storage
-      const storedUsers = localStorage.getItem('peachy_users');
-      const users = storedUsers ? JSON.parse(storedUsers) : [];
+      const response = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+      });
 
-      // Find user - Case insensitive email, exact password
-      const user = users.find((u: any) => 
-        u.email.toLowerCase().trim() === email.toLowerCase().trim() && 
-        u.password === password
-      );
+      const data = await response.json();
 
-      if (user) {
-        // CHECK FOR BAN OR SUSPENSION
-        if (user.isBanned) {
-            setBanReason('PERMANENT BAN: Your account has been flagged for violations of our Terms of Service. Access is denied.');
+      if (response.ok && data.user) {
+         // --- OWNER OVERRIDE CHECK ---
+         if (data.user.email.toLowerCase().trim() === 'thepeachymarkets@gmail.com') {
+             data.user.isVerified = true; 
+         }
+
+         if (data.user.isBanned) {
+            setError('PERMANENT BAN: Your account has been flagged for violations of our Terms of Service.');
+            setIsLoading(false);
             return;
-        }
-        if (user.isSuspended) {
-            setBanReason('ACCOUNT SUSPENDED: Your account is temporarily suspended pending review.');
-            return;
-        }
+         }
 
-        // --- OWNER OVERRIDE CHECK ---
-        if (user.email.toLowerCase().trim() === 'thepeachymarkets@gmail.com') {
-            user.isVerified = true; 
-        }
-
-        // Remove password from session object before saving/setting state
-        const { password, ...safeUser } = user;
-        onLogin(safeUser as User);
-        navigate('/profile');
+         onLogin(data.user);
+         navigate('/profile');
       } else {
-        setError('Invalid email or password.');
+         setError(data.error || 'Invalid email or password.');
       }
     } catch (err) {
       console.error(err);
-      alert("System Error: Login service is not responding. Please check your connection and try again.");
-      setError('An error occurred during login. Please try again.');
+      setError('Connection Error: Cannot reach server. Please try again later.');
+    } finally {
+        setIsLoading(false);
     }
   };
 
   const handleForgotSubmit = async (e: React.FormEvent) => {
       e.preventDefault();
-      setIsSending(true);
+      setIsLoading(true);
       
-      const storedUsers = localStorage.getItem('peachy_users');
-      if (storedUsers) {
-          const users = JSON.parse(storedUsers);
-          const userIndex = users.findIndex((u: any) => u.email.toLowerCase().trim() === resetEmail.toLowerCase().trim());
+      // Generate a client-side temp pass or rely on server generator?
+      // For this prototype, we send the temp pass from client so we know it to log (mock fallback)
+      const tempPass = "Peachy" + Math.floor(1000 + Math.random() * 9000) + "!";
 
-          if (userIndex > -1) {
-              // 1. Generate secure temp password
-              const newTempPass = "Peachy" + Math.floor(1000 + Math.random() * 9000) + "!";
-              
-              // 2. Update DB locally (Hybrid approach)
-              users[userIndex].password = newTempPass;
-              localStorage.setItem('peachy_users', JSON.stringify(users));
-              
-              // 3. Send email via Backend API
-              try {
-                  const response = await fetch('/api/auth/send-reset', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ email: resetEmail, tempPassword: newTempPass })
-                  });
-
-                  if (response.ok) {
-                      setResetSent(true);
-                  } else {
-                      // Fallback for Preview Mode (No Backend)
-                      throw new Error("Backend unreachable");
-                  }
-              } catch (err) {
-                  // BACKEND FALLBACK: If we are in React Preview and the Node server isn't running
-                  console.warn("Backend API Unreachable - Using Mock Email Log");
-                  console.group("📧 MOCK EMAIL SERVER (Fallback)");
-                  console.log(`To: ${resetEmail}`);
-                  console.log(`From: staff@peachy-markets.com`);
-                  console.log(`Body: Your temporary password is: ${newTempPass}`);
-                  console.groupEnd();
-                  setResetSent(true);
-              }
-          } else {
-              // SECURITY: Fake success timing
-              setTimeout(() => {
-                  setResetSent(true);
-                  setIsSending(false);
-              }, 1500);
-          }
-      } else {
-           alert("System Database Error: No users found.");
-           setIsSending(false);
+      try {
+          const response = await fetch('/api/auth/send-reset', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email: resetEmail, tempPassword: tempPass })
+          });
+          
+          // We always show success for security, even if email doesn't exist
+          setResetSent(true);
+          
+      } catch (err) {
+          console.error(err);
+          // Mock Fallback if server fails (Dev mode)
+          console.log(`[MOCK EMAIL] To: ${resetEmail}, TempPass: ${tempPass}`);
+          setResetSent(true);
+      } finally {
+          setIsLoading(false);
       }
-      setIsSending(false);
   };
 
   if (view === 'forgot') {
@@ -174,10 +138,10 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                     </div>
                     <button
                         type="submit"
-                        disabled={isSending}
-                        className="w-full py-3 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-xl shadow-lg transition-transform active:scale-95 disabled:opacity-50 disabled:cursor-wait"
+                        disabled={isLoading}
+                        className="w-full py-3 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-xl shadow-lg transition-transform active:scale-95 disabled:opacity-50 flex items-center justify-center"
                     >
-                        {isSending ? 'Sending...' : 'Send Reset Link'}
+                        {isLoading ? <Loader2 className="animate-spin w-5 h-5" /> : 'Send Reset Link'}
                     </button>
                 </form>
             )}
@@ -194,20 +158,8 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
       </div>
 
       {error && (
-        <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg text-sm text-center font-medium">
+        <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg text-sm text-center font-medium border border-red-200">
           {error}
-        </div>
-      )}
-
-      {banReason && (
-        <div className="mb-6 p-6 bg-red-50 border-l-4 border-red-600 rounded-r-lg animate-fadeIn">
-            <div className="flex items-start">
-                <AlertOctagon className="w-6 h-6 text-red-600 mr-3 shrink-0" />
-                <div>
-                    <h3 className="text-red-800 font-bold uppercase text-xs tracking-wider mb-1">Access Denied</h3>
-                    <p className="text-red-700 text-sm leading-relaxed">{banReason}</p>
-                </div>
-            </div>
         </div>
       )}
 
@@ -249,10 +201,10 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
         <button
           type="submit"
-          disabled={!!banReason}
-          className={`w-full py-3 text-white font-bold rounded-xl shadow-lg transition-transform active:scale-95 ${banReason ? 'bg-gray-400 cursor-not-allowed' : 'bg-peach-500 hover:bg-peach-600 shadow-peach-200'}`}
+          disabled={isLoading}
+          className={`w-full py-3 text-white font-bold rounded-xl shadow-lg transition-transform active:scale-95 bg-peach-500 hover:bg-peach-600 shadow-peach-200 flex items-center justify-center`}
         >
-          Sign In
+          {isLoading ? <Loader2 className="animate-spin w-5 h-5" /> : 'Sign In'}
         </button>
       </form>
 

@@ -35,7 +35,7 @@ function App() {
       setAgeVerified(true);
     }
 
-    // 2. User Session
+    // 2. User Session (Keep session token in local storage, but auth logic is now server based)
     const storedSession = localStorage.getItem('peachy_session');
     if (storedSession) {
       try {
@@ -46,7 +46,6 @@ function App() {
         localStorage.removeItem('peachy_session');
       }
     }
-    // Removed Mock Data Seeding
   }, []);
 
   // Simulate Cam Room Viewers
@@ -97,9 +96,22 @@ function App() {
     window.location.hash = '#/';
   };
 
-  const handleUserUpdate = (updatedUser: User) => {
+  const handleUserUpdate = async (updatedUser: User) => {
+    // 1. Update React State immediately for UI responsiveness
     setUser(updatedUser);
     localStorage.setItem('peachy_session', JSON.stringify(updatedUser));
+    
+    // 2. Sync with Server Background
+    try {
+        await fetch('/api/user/update', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updatedUser)
+        });
+    } catch (err) {
+        console.error("Failed to sync user state to server", err);
+        // Silent fail for UX, but data might be out of sync if they reload
+    }
   };
 
   // Helper check for owner

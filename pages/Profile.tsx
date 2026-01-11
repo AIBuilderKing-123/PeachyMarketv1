@@ -261,7 +261,7 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser }) => {
                      <span className="font-medium text-slate-700">
                         {user.joinedAt 
                          ? new Date(user.joinedAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
-                         : 'Oct 2023'}
+                         : new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
                      </span>
                    </div>
                  </div>
