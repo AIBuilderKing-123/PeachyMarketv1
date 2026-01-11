@@ -9,131 +9,150 @@ interface PayPalButtonProps {
   onError?: (err: any) => void;
 }
 
+// Global script loader to prevent duplicate scripts
+const loadPayPalScript = (clientId: string) => {
+  return new Promise((resolve, reject) => {
+    if ((window as any).paypal) {
+      resolve((window as any).paypal);
+      return;
+    }
+    const scriptId = 'paypal-js-sdk';
+    if (document.getElementById(scriptId)) {
+        // Script is already loading, wait for it
+        const interval = setInterval(() => {
+            if ((window as any).paypal) {
+                clearInterval(interval);
+                resolve((window as any).paypal);
+            }
+        }, 100);
+        return;
+    }
+
+    const script = document.createElement('script');
+    script.id = scriptId;
+    script.src = `https://www.paypal.com/sdk/js?client-id=${clientId}&currency=USD&intent=capture&components=buttons`;
+    script.async = true;
+    script.onload = () => resolve((window as any).paypal);
+    script.onerror = (err) => reject(err);
+    document.body.appendChild(script);
+  });
+};
+
 export const PayPalButton: React.FC<PayPalButtonProps> = ({ amount, description, customId, onSuccess, onError }) => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isSdkReady, setIsSdkReady] = useState(false);
   const paypalRef = useRef<HTMLDivElement>(null);
   
-  // Refs to track lifecycle and prevent race conditions
   const isMounted = useRef(true);
-  const renderTimer = useRef<any>(null);
   const buttonInstance = useRef<any>(null);
 
   // Calculate Total with 4% Buyer Fee
   const serviceFee = amount * FEES.BUYER_FEE_PERCENT;
   const totalAmount = (amount + serviceFee).toFixed(2);
-  const safeDescription = (description || "Purchase").substring(0, 127);
-
-  // Helper to parse the [object Object] error from PayPal
-  const parseError = (err: any): string => {
-    if (typeof err === 'string') return err;
-    if (err?.message) return err.message;
-    try {
-        return JSON.stringify(err);
-    } catch {
-        return 'Unknown PayPal Error';
-    }
-  };
+  const safeDescription = (description || "Purchase").replace(/[^\w\s\-\.\(\)\$\%\#]/gi, '').substring(0, 120); // Aggressive sanitization
 
   useEffect(() => {
     isMounted.current = true;
-
-    const renderButton = () => {
-      const w = window as any;
-
-      if (!w.paypal) {
-        // Retry if script is loading
-        if (isMounted.current) {
-            renderTimer.current = setTimeout(renderButton, 300);
-        }
-        return;
-      }
-
-      // Cleanup previous instance if exists to prevent duplicates
-      if (buttonInstance.current) {
-        try { buttonInstance.current.close(); } catch(e) {}
-        buttonInstance.current = null;
-      }
-
-      if (paypalRef.current) {
-         paypalRef.current.innerHTML = "";
-      }
-
-      try {
-        const button = w.paypal.Buttons({
-          style: {
-            layout: 'vertical',
-            color: 'gold',
-            shape: 'rect',
-            label: 'paypal'
-          },
-          createOrder: (data: any, actions: any) => {
-            return actions.order.create({
-              purchase_units: [{
-                description: safeDescription,
-                custom_id: customId || 'GUEST',
-                amount: {
-                  currency_code: "USD",
-                  value: totalAmount // Must be string
-                }
-              }]
-            });
-          },
-          onApprove: (data: any, actions: any) => {
-            return actions.order.capture()
-              .then((details: any) => {
-                 if (isMounted.current) onSuccess(details);
-              })
-              .catch((err: any) => {
-                 const msg = parseError(err);
-                 console.error("PayPal Capture Error:", msg);
-                 if (isMounted.current && onError) onError(msg);
-              });
-          },
-          onError: (err: any) => {
-            const msg = parseError(err);
-            
-            // Ignore benign popup closures or specific internal SDK warnings
-            if (msg.includes("popup_close") || msg.includes("unhandled_exception")) {
-                console.warn("PayPal SDK Warning:", msg);
-                return;
-            }
-
-            console.error("PayPal Component Error:", msg);
-            if (isMounted.current) {
-                setErrorMessage("Payment gateway error. Please refresh and try again.");
-                if (onError) onError(msg);
-            }
-          }
+    
+    // Load SDK Dynamically
+    const CLIENT_ID = 'AbkHNTbccKTux5lsE5nCi7BHsKT-Qpbmse2XU5T3J4pUKrLUle6BtwLm0LaIuSygsz0rq2MrTnlGcg-k';
+    
+    loadPayPalScript(CLIENT_ID)
+        .then(() => {
+            if (isMounted.current) setIsSdkReady(true);
+        })
+        .catch(err => {
+            console.error("PayPal Load Error:", err);
+            if (isMounted.current) setErrorMessage("Secure connection to PayPal failed.");
         });
 
-        // Store instance and render
-        if (paypalRef.current && isMounted.current) {
-            buttonInstance.current = button;
-            button.render(paypalRef.current).catch((err: any) => {
-                console.error("PayPal Render Failed:", err);
+    return () => { isMounted.current = false; };
+  }, []);
+
+  useEffect(() => {
+    if (!isSdkReady || !paypalRef.current) return;
+    
+    // Cleanup existing buttons
+    if (paypalRef.current.innerHTML !== "") {
+        paypalRef.current.innerHTML = "";
+    }
+
+    const renderButton = async () => {
+        const w = window as any;
+        if (!w.paypal) return;
+
+        try {
+            const button = w.paypal.Buttons({
+                style: {
+                    layout: 'vertical',
+                    color: 'gold',
+                    shape: 'rect',
+                    label: 'paypal'
+                },
+                createOrder: (data: any, actions: any) => {
+                    return actions.order.create({
+                        purchase_units: [{
+                            description: safeDescription,
+                            custom_id: customId || 'GUEST',
+                            amount: {
+                                currency_code: "USD",
+                                value: totalAmount
+                            }
+                        }]
+                    });
+                },
+                onApprove: (data: any, actions: any) => {
+                    return actions.order.capture()
+                        .then((details: any) => {
+                            if (isMounted.current) onSuccess(details);
+                        })
+                        .catch((err: any) => {
+                            // Extract error message safely
+                            let msg = "Payment failed";
+                            if (err?.message) msg = err.message;
+                            if (typeof err === 'string') msg = err;
+                            console.error("Capture Error:", msg);
+                            if (onError && isMounted.current) onError(msg);
+                        });
+                },
+                onError: (err: any) => {
+                    // Handle "string did not match expected pattern" (DOMException)
+                    let msg = "An error occurred with PayPal.";
+                    if (err instanceof Error) msg = err.message;
+                    else if (typeof err === 'string') msg = err;
+                    
+                    if (msg.includes("pattern") || msg.includes("popup_close")) {
+                        console.warn("PayPal Warning:", msg);
+                        return; // Ignore these specific non-critical errors
+                    }
+
+                    console.error("PayPal Component Error:", msg);
+                    if (isMounted.current) {
+                        setErrorMessage("Payment gateway error. Please try again.");
+                        if (onError) onError(msg);
+                    }
+                }
             });
+
+            if (paypalRef.current && isMounted.current) {
+                await button.render(paypalRef.current);
+                buttonInstance.current = button;
+            }
+        } catch (err) {
+            console.error("Button Render Error:", err);
         }
-      } catch (err: any) {
-         console.error("PayPal Init Error:", err);
-         if (isMounted.current) setErrorMessage("Failed to load secure payment button.");
-      }
     };
 
-    // Debounce rendering to handle React Strict Mode double-invoke
-    if (renderTimer.current) clearTimeout(renderTimer.current);
-    renderTimer.current = setTimeout(renderButton, 100);
+    renderButton();
 
     return () => {
-      isMounted.current = false;
-      if (renderTimer.current) clearTimeout(renderTimer.current);
-      
-      // Cleanup button instance gracefully
-      if (buttonInstance.current) {
-        try { buttonInstance.current.close(); } catch(e) {}
-        buttonInstance.current = null;
-      }
+        if (buttonInstance.current) {
+            try { buttonInstance.current.close(); } catch(e) {}
+            buttonInstance.current = null;
+        }
     };
-  }, [amount, safeDescription, totalAmount, customId]);
+
+  }, [isSdkReady, totalAmount, safeDescription, customId]);
 
   if (errorMessage) {
     return (
@@ -141,6 +160,14 @@ export const PayPalButton: React.FC<PayPalButtonProps> = ({ amount, description,
         <p>{errorMessage}</p>
       </div>
     );
+  }
+
+  if (!isSdkReady) {
+      return (
+          <div className="w-full h-[150px] bg-gray-100 rounded-xl animate-pulse flex items-center justify-center text-gray-400 text-sm">
+              Loading Secure Payment...
+          </div>
+      );
   }
 
   return (
