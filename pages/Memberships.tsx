@@ -232,6 +232,7 @@ export const Memberships: React.FC<MembershipsProps> = ({ user, onUpdateUser }) 
                </div>
                
                <PayPalButton 
+                 key={checkoutPlan.name} // Added key for stability
                  amount={checkoutPlan.price} 
                  description={`Membership: ${checkoutPlan.name}`}
                  customId={user?.id}

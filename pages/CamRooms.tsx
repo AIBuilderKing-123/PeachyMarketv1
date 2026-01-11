@@ -694,6 +694,7 @@ export const CamRooms: React.FC<CamRoomsProps> = ({ user, onUpdateUser, rooms, o
                  ) : (
                     <>
                       <PayPalButton 
+                          key={tokensToBuy}
                           amount={tokensToBuy / 10} 
                           description={`${tokensToBuy} Tokens`}
                           customId={user?.id}

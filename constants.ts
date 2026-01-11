@@ -14,7 +14,8 @@ export const BUNNY_CDN_CONFIG = {
 };
 
 export const FEES = {
-  SERVICE_FEE_PERCENT: 0.07, // 7%
+  BUYER_FEE_PERCENT: 0.04, // 4% charged to buyer
+  SELLER_FEE_PERCENT: 0.04, // 4% charged to seller
   TOKEN_SPLIT_SELLER: 0.85, // 85%
   TOKEN_SPLIT_OWNER: 0.15, // 15%
   VIP_TOKEN_SPLIT_SELLER: 0.90, // 90%
@@ -49,7 +50,7 @@ By accessing The Peachy Marketplace, you confirm you are at least 18 years of ag
 All content uploaded to The Peachy Marketplace must strictly adhere to 18 U.S.C. § 2257 record-keeping requirements. We have a zero-tolerance policy for illegal content. Harassment, hate speech, and fraudulent behavior will result in an immediate permanent ban.
 
 3. MARKETPLACE & TRANSACTIONS
-- Service Fees: A 7% service fee is automatically deducted from all transactions.
+- Service Fees: A 4% service fee is charged to the Buyer and a 4% service fee is deducted from the Seller on all marketplace transactions.
 - Payouts: Sellers may withdraw funds via PayPal or Direct ACH (Melio).
 - Liability: The Peachy Marketplace acts solely as a platform. We are not a party to any transaction between buyers and sellers.
 

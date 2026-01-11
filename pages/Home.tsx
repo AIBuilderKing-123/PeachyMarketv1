@@ -60,7 +60,7 @@ export const Home: React.FC = () => {
             </div>
 
             <p className="text-gray-400 max-w-lg text-sm mt-10 opacity-80 font-medium">
-              Join the most secure adult marketplace. Lowest fees (7%), instant payouts, and a safe verified community.
+              Join the most secure adult marketplace. Lowest fees (4%), instant payouts, and a safe verified community.
             </p>
           </div>
         </div>
@@ -96,11 +96,11 @@ export const Home: React.FC = () => {
          </div>
          <div className="p-10 bg-gray-800 rounded-3xl shadow-xl border border-gray-700 hover:border-peach-900/50 transition-colors group">
             <div className="w-14 h-14 bg-gray-900 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-peach-900/20 transition-colors border border-gray-700 group-hover:border-peach-900/30">
-              <span className="text-peach-500 font-bold text-xl">7%</span>
+              <span className="text-peach-500 font-bold text-xl">4%</span>
             </div>
             <h3 className="text-2xl font-bold text-gray-100 mb-3">Lowest Fees</h3>
             <p className="text-gray-400 leading-relaxed">
-              We take less so you keep more. Only 7% service fee on transactions with instant balance updates.
+              We take less so you keep more. Only 4% service fee on transactions with instant balance updates.
             </p>
          </div>
          <div className="p-10 bg-gray-800 rounded-3xl shadow-xl border border-gray-700 hover:border-peach-900/50 transition-colors group">

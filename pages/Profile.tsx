@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { User, UserRole, Transaction } from '../types';
 import { Camera, Edit, UserPlus, MessageCircle, Flag, ArrowUpRight, ArrowDownLeft, Wallet, Calendar, Clock, DollarSign, Coins, Heart, Users as UsersIcon, Link as LinkIcon, Copy, X, Save } from 'lucide-react';
 import { SEO } from '../components/SEO';
+import { useNavigate } from 'react-router-dom';
 
 interface ProfileProps {
   user: User;
@@ -9,6 +10,7 @@ interface ProfileProps {
 }
 
 export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser }) => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'about' | 'wallet'>('about');
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isEditing, setIsEditing] = useState(false);
@@ -216,6 +218,13 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser }) => {
                     <div className="text-2xl font-bold flex items-center text-green-400">
                        <DollarSign className="w-5 h-5" /> {user.balance.toFixed(2)}
                     </div>
+                    {/* PAYOUT BUTTON */}
+                    <button 
+                        onClick={() => navigate('/payouts')}
+                        className="mt-3 w-full bg-green-600 hover:bg-green-700 text-white text-xs py-2 rounded-lg font-bold shadow transition-colors flex items-center justify-center"
+                    >
+                        Request Payout
+                    </button>
                  </div>
                  <div>
                     <div className="text-gray-400 text-xs">Tokens</div>

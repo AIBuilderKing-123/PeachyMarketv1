@@ -67,7 +67,7 @@ export const Terms: React.FC = () => {
             <div className="space-y-8 animate-fadeIn max-w-4xl mx-auto">
               <div className="border-b border-gray-200 pb-4">
                 <h2 className="text-2xl font-bold text-slate-800">Master Service Agreement</h2>
-                <p className="text-sm text-slate-500 mt-1">Effective Date: {new Date().toLocaleDateString()} | Version 3.0 (Binding)</p>
+                <p className="text-sm text-slate-500 mt-1">Effective Date: {new Date().toLocaleDateString()} | Version 3.1 (Binding)</p>
               </div>
 
               {/* Age & Liability Warning */}
@@ -117,7 +117,25 @@ export const Terms: React.FC = () => {
                 </section>
 
                 <section>
-                  <h3 className="font-bold text-slate-900 text-lg mb-2">3. Intellectual Property & Content Ownership</h3>
+                  <h3 className="font-bold text-slate-900 text-lg mb-2">3. Marketplace Fees & Payments</h3>
+                  <p>
+                    The Platform facilitates payments between buyers and sellers.
+                  </p>
+                   <ul className="list-disc pl-5 space-y-2 bg-white p-4 rounded-lg border border-gray-200">
+                    <li>
+                      <strong>Buyer Fee:</strong> A service fee of <strong>4%</strong> is charged to the Buyer on top of the listing price to cover payment processing and platform maintenance.
+                    </li>
+                    <li>
+                      <strong>Seller Fee:</strong> A service fee of <strong>4%</strong> is deducted from the Seller's earnings for each transaction.
+                    </li>
+                    <li>
+                      <strong>Payouts:</strong> Funds are credited to the Seller's internal wallet instantly upon successful payment capture and are available for withdrawal via PayPal or ACH.
+                    </li>
+                  </ul>
+                </section>
+
+                <section>
+                  <h3 className="font-bold text-slate-900 text-lg mb-2">4. Intellectual Property & Content Ownership</h3>
                   <p>
                     Users retain ownership of the content they upload but grant the Platform a worldwide, non-exclusive, royalty-free license to host, display, and distribute said content. 
                     Users warrant that they own all copyrights to uploaded material. The Platform respects the DMCA and will respond to valid takedown notices. 
@@ -126,7 +144,7 @@ export const Terms: React.FC = () => {
                 </section>
 
                 <section>
-                  <h3 className="font-bold text-slate-900 text-lg mb-2">4. Limitation of Liability & Indemnification</h3>
+                  <h3 className="font-bold text-slate-900 text-lg mb-2">5. Limitation of Liability & Indemnification</h3>
                   <p className="bg-gray-100 p-4 rounded-lg border border-gray-200 font-medium italic">
                     TO THE FULLEST EXTENT PERMITTED BY LAW, THE PLATFORM SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, LOSS OF PROFITS, DATA USE, OR GOODWILL. 
                     YOU AGREE TO INDEMNIFY, DEFEND, AND HOLD HARMLESS THE PLATFORM, ITS OWNERS, OFFICERS, AND AFFILIATES FROM ANY CLAIMS, DAMAGES, OBLIGATIONS, LOSSES, LIABILITIES, COSTS OR DEBT, AND EXPENSES (INCLUDING ATTORNEY'S FEES) ARISING FROM YOUR USE OF THE SERVICE OR VIOLATION OF THESE TERMS.
@@ -134,7 +152,7 @@ export const Terms: React.FC = () => {
                 </section>
 
                 <section>
-                  <h3 className="font-bold text-slate-900 text-lg mb-2">5. Mandatory Arbitration & Class Action Waiver</h3>
+                  <h3 className="font-bold text-slate-900 text-lg mb-2">6. Mandatory Arbitration & Class Action Waiver</h3>
                   <p>
                     <strong>READ THIS SECTION CAREFULLY. IT LIMITS YOUR LEGAL RIGHTS.</strong>
                     Any dispute, claim, or controversy arising out of or relating to these Terms or the breach, termination, enforcement, interpretation, or validity thereof, including the determination of the scope or applicability of this agreement to arbitrate, shall be determined by binding arbitration rather than in court.
@@ -143,7 +161,7 @@ export const Terms: React.FC = () => {
                 </section>
 
                 <section>
-                  <h3 className="font-bold text-slate-900 text-lg mb-2">6. Termination of Service</h3>
+                  <h3 className="font-bold text-slate-900 text-lg mb-2">7. Termination of Service</h3>
                   <p>
                     We reserve the absolute right to terminate, suspend, or restrict your access to the Service immediately, without prior notice or liability, for any reason whatsoever, including without limitation if you breach the Terms. 
                     The Platform is a private business and may refuse service to anyone at its sole discretion.

@@ -17,6 +17,7 @@ import { Memberships } from './pages/Memberships';
 import { Terms } from './pages/Terms';
 import { Disputes } from './pages/Disputes';
 import { Referrals } from './pages/Referrals';
+import { Payouts } from './pages/Payouts';
 import { INITIAL_CAM_ROOMS } from './constants';
 import { User, CamRoom } from './types';
 
@@ -137,6 +138,7 @@ function App() {
           <Route path="/referrals" element={<Referrals />} />
           <Route path="/admin" element={(user?.role === 'ADMIN' || user?.role === 'OWNER') ? <Admin /> : <Navigate to="/" />} />
           <Route path="/contact" element={<Contact />} />
+          <Route path="/payouts" element={user ? <Payouts user={user} onUpdateUser={handleUserUpdate} /> : <Navigate to="/login" />} />
         </Routes>
       </Layout>
       

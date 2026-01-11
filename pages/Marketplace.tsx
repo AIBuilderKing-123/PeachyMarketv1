@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Listing, User } from '../types';
+import { Listing, User, UserRole } from '../types';
 import { FEES } from '../constants';
 import { Star, Download, Image as ImageIcon, Video, Link as LinkIcon, Plus, ShieldAlert, Upload, CheckCircle, Flag, Eye, Users, Activity, X, ShoppingCart, Search } from 'lucide-react';
 import { PayPalButton } from '../components/PayPalButton';
@@ -90,9 +90,44 @@ export const Marketplace: React.FC<MarketplaceProps> = ({ user }) => {
       const paidAmount = details.purchase_units[0].amount.value;
       const transactionId = details.id;
 
-      alert(`PAYMENT SUCCESSFUL!\n\nTransaction ID: ${transactionId}\nAmount: $${paidAmount}\n\nThank you for your purchase. The content has been sent to your email address.`);
-      
-      // In a real app, backend would trigger email now.
+      // --- BACKEND SIMULATION ---
+      // Distribute Funds: Seller gets (Price - 4%), Owner gets (BuyerFee 4% + SellerFee 4%)
+      try {
+        const storedUsers = localStorage.getItem('peachy_users');
+        if (storedUsers) {
+            const users: User[] = JSON.parse(storedUsers);
+            
+            // 1. Find Seller
+            const sellerIndex = users.findIndex(u => u.id === purchaseModalListing.sellerId);
+            // 2. Find Owner (RootAdmin or role OWNER)
+            const ownerIndex = users.findIndex(u => u.role === UserRole.OWNER);
+            
+            if (sellerIndex > -1) {
+                const basePrice = purchaseModalListing.price;
+                const sellerFee = basePrice * FEES.SELLER_FEE_PERCENT;
+                const buyerFee = basePrice * FEES.BUYER_FEE_PERCENT;
+                
+                const sellerPayout = basePrice - sellerFee;
+                const totalFeeCollected = sellerFee + buyerFee;
+
+                // Credit Seller
+                users[sellerIndex].balance += sellerPayout;
+                
+                // Credit Owner
+                if (ownerIndex > -1) {
+                    users[ownerIndex].balance += totalFeeCollected;
+                }
+                
+                // Save DB
+                localStorage.setItem('peachy_users', JSON.stringify(users));
+                console.log(`Simulated Transaction: Seller +$${sellerPayout.toFixed(2)}, Owner +$${totalFeeCollected.toFixed(2)}`);
+            }
+        }
+      } catch (err) {
+        console.error("Simulation Error", err);
+      }
+
+      alert(`PAYMENT SUCCESSFUL!\n\nTransaction ID: ${transactionId}\nAmount Paid: $${paidAmount}\n\nThank you for your purchase. The content has been sent to your email address.`);
       setPurchaseModalListing(null);
   };
 
@@ -302,6 +337,7 @@ export const Marketplace: React.FC<MarketplaceProps> = ({ user }) => {
                </div>
                
                <PayPalButton 
+                 key={purchaseModalListing.id} // Added key for stability
                  amount={purchaseModalListing.price} 
                  description={`Purchase: ${purchaseModalListing.title}`}
                  customId={user?.id}
@@ -345,7 +381,7 @@ export const Marketplace: React.FC<MarketplaceProps> = ({ user }) => {
                     className="w-full p-4 bg-gray-900 border border-gray-700 text-white rounded-xl focus:border-peach-500 outline-none transition-colors"
                     placeholder="19.99"
                    />
-                   <p className="text-xs text-gray-500 mt-2">You receive: <span className="text-green-500">${(parseFloat(newPrice || '0') * 0.93).toFixed(2)}</span> (7% fee)</p>
+                   <p className="text-xs text-gray-500 mt-2">You receive: <span className="text-green-500">${(parseFloat(newPrice || '0') * (1 - FEES.SELLER_FEE_PERCENT)).toFixed(2)}</span> ({FEES.SELLER_FEE_PERCENT * 100}% fee)</p>
                 </div>
               </div>
 
