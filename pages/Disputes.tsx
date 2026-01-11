@@ -448,7 +448,7 @@ export const Disputes: React.FC = () => {
                         <div className="mt-2 flex justify-between items-center">
                           <span className="text-sm text-yellow-600 font-medium">Status: {c.update}</span>
                           <button onClick={() => setSelectedCase(c)} className="bg-peach-50 text-peach-600 px-4 py-2 rounded-lg text-sm font-bold hover:bg-peach-100 transition-colors">
-                             View Details & Reply &rarr;
+                             View Details & Reply &gt;
                           </button>
                         </div>
                       )}
