@@ -28,6 +28,9 @@ export interface User {
   isBanned?: boolean;
   isSuspended?: boolean;
   
+  // Admin Notes
+  adminNotes?: string;
+
   // Referral & Affiliate Data
   isAffiliate?: boolean;
   referralCode?: string; // Defaults to username if not set

@@ -2,24 +2,25 @@ import { User, UserRole, Listing, CamRoom, Transaction } from './types';
 
 export const APP_NAME = "The Peachy Marketplace";
 export const SLOGAN = "The Ultimate Marketplace for Sex Workers";
-export const API_URL = "https://thepeachyhub.com/api";
+
+// IMPORTANT: Leave this empty. This allows the app to connect to the backend 
+// using the same domain name (thepeachyhub.com) automatically.
+export const API_URL = ""; 
 
 // BUNNY CDN CONFIGURATION
-// Replace these values with your actual BunnyCDN Stream details when deploying.
 export const BUNNY_CDN_CONFIG = {
-  ENABLED: true, // Toggle to false to use placeholder graphics instead of video player
-  PULL_ZONE_URL: 'https://video.peachy-markets.com', // Your connected hostname or b-cdn.net URL
-  RTMP_INGEST_URL: 'rtmp://rtmp-global.bunnycdn.com/live', // Standard BunnyCDN Ingest
-  // In a real app, you would fetch the stream key securely from your backend
+  ENABLED: true,
+  PULL_ZONE_URL: 'https://video.peachy-markets.com',
+  RTMP_INGEST_URL: 'rtmp://rtmp-global.bunnycdn.com/live',
 };
 
 export const FEES = {
-  BUYER_FEE_PERCENT: 0.04, // 4% charged to buyer
-  SELLER_FEE_PERCENT: 0.04, // 4% charged to seller
-  TOKEN_SPLIT_SELLER: 0.85, // 85%
-  TOKEN_SPLIT_OWNER: 0.15, // 15%
-  VIP_TOKEN_SPLIT_SELLER: 0.90, // 90%
-  DIAMOND_TOKEN_SPLIT_SELLER: 0.95, // 95%
+  BUYER_FEE_PERCENT: 0.04,
+  SELLER_FEE_PERCENT: 0.04,
+  TOKEN_SPLIT_SELLER: 0.85,
+  TOKEN_SPLIT_OWNER: 0.15,
+  VIP_TOKEN_SPLIT_SELLER: 0.90,
+  DIAMOND_TOKEN_SPLIT_SELLER: 0.95,
   CAM_BLOCK_PRICE: 5.00,
   CAM_BLOCK_PRICE_VIP: 2.50,
   CAM_BLOCK_PRICE_DIAMOND: 0,
@@ -27,7 +28,6 @@ export const FEES = {
   PREMIUM_STICKY_PRICE: 20.00,
 };
 
-// Initial Room Configuration (Structural)
 export const INITIAL_CAM_ROOMS: CamRoom[] = Array.from({ length: 10 }, (_, i) => ({
   id: i + 1,
   viewers: 0,
