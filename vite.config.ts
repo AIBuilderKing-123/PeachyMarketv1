@@ -15,7 +15,7 @@ export default defineConfig({
     }
   },
   build: {
-    outDir: 'build', // Changed from 'dist' to avoid permission locks
-    emptyOutDir: true
+    outDir: 'build', 
+    emptyOutDir: false
   }
 });
